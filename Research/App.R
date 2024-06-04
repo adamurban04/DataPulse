@@ -37,8 +37,11 @@ ui <- fluidPage(theme = shinytheme("yeti"),
                            sidebarPanel(
                              
                              radioButtons(inputId = "plot_choice", label = "Choose Plot:", 
-                                         choices = list("Diagnosis Age" = "age", 
-                                                        "Sex" = "sex")),
+                                         choices = list("Age" = "age", 
+                                                        "Sex" = "sex",
+                                                        "Race" = "race",
+                                                        "Survival Status" = "survival_status",
+                                                        "Mutation Count" = "mutation_count")),
                            ),
                            mainPanel(
                              plotOutput(outputId = "dynamic_plot")
@@ -82,6 +85,8 @@ server <- function(input, output) {
     
     plot <- switch(input$plot_choice,
                    
+                   # Bar Chart, Pie Chart, Density Plot
+                   
                    "age" = {
                      
                      # Filter out NA values for Age
@@ -100,10 +105,10 @@ server <- function(input, output) {
                        ggplot(aes(x = `Diagnosis Age`)) +
                        geom_bar() +
                        labs(title = "Distribution of Diagnosis Age", x = "Age", y = "Count") +
-                       geom_text(aes(label = paste("Total samples:", total_samples)), 
-                                 x = Inf, y = Inf, hjust = 1.2, vjust = 1.9) +
-                       geom_text(aes(label = paste("Average Diagnosis Age:", average_age)), 
-                                 x = Inf, y = Inf, hjust = 3.75, vjust = 2)
+                       annotate("text", label = paste("Total samples:", total_samples), 
+                                x = Inf, y = Inf, hjust = 1.2, vjust = 1.9) +
+                       annotate("text", label = paste("Average Diagnosis Age:", average_age), 
+                                x = Inf, y = Inf, hjust = 3.75, vjust = 2)
                    },
                    
                    "sex" = {
@@ -127,9 +132,72 @@ server <- function(input, output) {
                        labs(title = "Male/Female Diagnosed Ratio") +
                        scale_fill_manual(values = c("#F8766D", "#00BFC4")) +
                        geom_text(aes(label = n), position = position_stack(vjust = 0.5)) +  # Add counts as labels
-                       geom_text(aes(x = Inf, y = Inf, label = paste("Total samples:", total_samples)), vjust = -1.1, hjust = 0.6)
+                       annotate("text", x = Inf, y = Inf, label = paste("Total samples:", total_samples), hjust = 0.5, vjust = -1)
+                   },
+                     
+                     
+                   "race" = {
+                     
+                     # Filter out NA values for Race
+                     filtered_race <- luad_data %>%
+                       filter(!is.na(`Race Category`))
+                     
+                     # Count Valid Samples in Race
+                     total_samples <- nrow(filtered_race)
+                     
+                     # Race Category Count
+                     race_counts <- filtered_race %>%
+                       count(`Race Category`) # (Sex column in the filtered_sex dataframe)
+                     
+                     # Create the pie chart
+                     ggplot(race_counts, aes(x = "", y = n, fill = `Race Category`)) +
+                       geom_bar(stat = "identity", width = 1) +
+                       coord_polar("y", start = 0) +  # Making it a Pie Chart
+                       theme_void() + # Remove background, grid, and axis marks
+                       labs(title = "Race Category Diagnosed Ratio") +
+                       geom_text(aes(label = n), position = position_stack(vjust = 0.5)) +  # Add counts as labels
+                       annotate("text", x = Inf, y = Inf, label = paste("Total samples:", total_samples), hjust = 0.5, vjust = -1)
+                   },
                    
-                   })
+                   "survival_status" = {
+                     
+                     # Filter out NA values for Survival Status
+                     filtered_survival_status <- luad_data %>%
+                       filter(!is.na(`Overall Survival Status`))
+                     
+                     # Count Valid Samples in Survival Status
+                     total_samples <- nrow(filtered_survival_status)
+                     
+                     # Survival Status Count
+                     sruvival_status_counts <- filtered_survival_status %>%
+                       count(`Overall Survival Status`) # (Sex column in the filtered_sex dataframe)
+                     
+                     # Create the pie chart
+                     ggplot(sruvival_status_counts, aes(x = "", y = n, fill = `Overall Survival Status`)) +
+                       geom_bar(stat = "identity", width = 1) +
+                       coord_polar("y", start = 0) +  # Making it a Pie Chart
+                       theme_void() + # Remove background, grid, and axis marks
+                       labs(title = "Survival Status") +
+                       scale_fill_manual(values = c("#5CB85C", "#D9534F")) +
+                       geom_text(aes(label = n), position = position_stack(vjust = 0.5)) +  # Add counts as labels
+                       annotate("text", x = Inf, y = Inf, label = paste("Total samples:", total_samples), hjust = 0.5, vjust = -1)
+                   },
+                   
+                   "mutation_count" = {
+                     
+                     # Filter out NA values for Mutation Count
+                     filtered_mutation_count <- luad_data %>%
+                       filter(!is.na(`Mutation Count`))
+                     
+                     # Count Valid Samples in Mutation Count
+                     total_samples <- nrow(filtered_mutation_count)
+                     
+                     # Create the plot
+                     filtered_mutation_count %>%
+                       ggplot( aes(x=`Mutation Count`)) +
+                       geom_density(fill="#69b3a2", color="#e9ecef", alpha=0.8)
+                     
+                     })
     
     print(plot)
   })
