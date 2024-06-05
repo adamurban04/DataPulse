@@ -4,7 +4,7 @@ library(shinythemes)
 library(readr)
 library(ggplot2)
 library(dplyr) # Data Manipulation (%>%)
-library(DT)    # Adding Searchability to Datatables
+library(DT)    # for adding searchability to said Datatables
 
 # Read the txt file for Report
 text_content <- readLines("www/Report.txt")
@@ -155,7 +155,7 @@ server <- function(input, output) {
                        annotate("text", label = paste("Total samples:", total_samples), 
                                 x = Inf, y = Inf, hjust = 1.2, vjust = 1.9) +
                        annotate("text", label = paste("Average Diagnosis Age:", average_age), 
-                                x = Inf, y = Inf, hjust = 3.75, vjust = 2)
+                                x = Inf, y = Inf, hjust = 1.1, vjust = 3.8)
                    },
                    
                    "sex" = {
@@ -230,7 +230,9 @@ server <- function(input, output) {
                      filt_data %>% 
                        ggplot(aes(x = `Neoplasm Disease Stage American Joint Committee on Cancer Code`)) +
                        geom_bar(fill = "#F8766D", color = "black") +
-                       labs(title = "Distribution of Neoplasm Disease Stages", x = "Stage", y = "Count")
+                       labs(title = "Distribution of Neoplasm Disease Stages", x = "Stage", y = "Count") +
+                       annotate("text", label = paste("Total samples:", total_samples), 
+                                x = Inf, y = Inf, hjust = 1.2, vjust = 1.9)
                        
                    })
     
