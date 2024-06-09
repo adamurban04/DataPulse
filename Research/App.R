@@ -6,9 +6,6 @@ library(ggplot2)
 library(dplyr) # Data Manipulation (%>%)
 library(DT)    # for adding searchability to said Datatables
 
-# Read the txt file for Report
-text_content <- readLines("www/Report.txt")
-text_content <- paste(text_content, collapse = "\n")
 
 # Read the TSV file for Dataset
 
@@ -22,16 +19,6 @@ ui <- fluidPage(theme = shinytheme("yeti"),
                 # Custom CSS to style the Research Report text box (cmnd+opt+L to fold)
                 
                 tags$head(tags$style(HTML("
-                  .large-text-box {
-                    width: 160%;
-                    height: 600px;
-                    overflow-y: scroll;
-                    white-space: pre-wrap;
-                    word-wrap: break-word;
-                    border: 1px solid #ccc;
-                    padding: 10px;
-                    background-color: #f9f9f9;
-                  }
                   .scrollable-table {
                     overflow-x: auto;
                     white-space: nowrap;
@@ -74,9 +61,8 @@ ui <- fluidPage(theme = shinytheme("yeti"),
                                          choices = list("Age" = "age", 
                                                         "Sex" = "sex",
                                                         "Race" = "race",
-                                                        "Survival Status" = "survival_status",
-                                                        "Mutation Count" = "mutation_count",
-                                                        "Neploasm Disease Stage" = "neploasm_disease_stage")),
+                                                        "Ethinicity" = "ethinicity"
+                                                        ))
                            ),
                            mainPanel(
                              plotOutput(outputId = "dynamic_plot")
@@ -88,8 +74,7 @@ ui <- fluidPage(theme = shinytheme("yeti"),
                   tabPanel("REPORT",
             
                                     mainPanel(
-                                      h3("Research: Lung adenocarcinoma (LUAD)"),
-                                      h4(pre(textOutput("research_report"), class = "large-text-box"))                                      
+                                      includeMarkdown("www/Report.md")                                      
                                     )
                            ),
 ),
@@ -116,15 +101,16 @@ server <- function(input, output) {
   
 # Tab: PLOTS
   
+  total_samples <- nrow(luad_data)
+  
   # Reactive expression to filter data based on plot choice
   filtered_data <- reactive({
     switch(input$plot_choice,
            "age" = luad_data %>% filter(!is.na(`Diagnosis Age`)),
            "sex" = luad_data %>% filter(!is.na(Sex)),
            "race" = luad_data %>% filter(!is.na(`Race Category`)),
-           "survival_status" = luad_data %>% filter(!is.na(`Overall Survival Status`)),
-           "mutation_count" = luad_data %>% filter(!is.na(`Mutation Count`)),
-           "neploasm_disease_stage" = luad_data %>% filter(!is.na(`Neoplasm Disease Stage American Joint Committee on Cancer Code`))
+           "ethinicity" = luad_data %>% filter(!is.na(`Ethnicity Category`)),
+           
     )
   })
   
@@ -133,7 +119,7 @@ server <- function(input, output) {
     
     # Get the total number of valid samples
     filt_data <- filtered_data()
-    total_samples <- nrow(filt_data)
+    total_filtered_samples <- nrow(filt_data)
     
     plot <- switch(input$plot_choice,
                    
@@ -152,8 +138,8 @@ server <- function(input, output) {
                        ggplot(aes(x = `Diagnosis Age`)) +
                        geom_bar() +
                        labs(title = "Distribution of Diagnosis Age", x = "Age", y = "Count") +
-                       annotate("text", label = paste("Total samples:", total_samples), 
-                                x = Inf, y = Inf, hjust = 1.2, vjust = 1.9) +
+                       annotate("text", label = paste("Valid Filtered Samples:", total_filtered_samples, "NA:", (total_samples-total_filtered_samples)), 
+                                x = Inf, y = Inf, hjust = 1.0, vjust = 1.5) +
                        annotate("text", label = paste("Average Diagnosis Age:", average_age), 
                                 x = Inf, y = Inf, hjust = 1.1, vjust = 3.8)
                    },
@@ -172,7 +158,7 @@ server <- function(input, output) {
                        labs(title = "Male/Female Diagnosed Ratio") +
                        scale_fill_manual(values = c("#F8766D", "#00BFC4")) +
                        geom_text(aes(label = n), position = position_stack(vjust = 0.5)) +  # Add counts as labels
-                       annotate("text", x = Inf, y = Inf, label = paste("Total samples:", total_samples), hjust = 0.5, vjust = -1)
+                       annotate("text", x = Inf, y = Inf, label = paste("Valid Filtered Samples:", total_filtered_samples, "NA:", (total_samples-total_filtered_samples)),  hjust = 0.5, vjust = -1)
                    },
                      
                      
@@ -189,52 +175,26 @@ server <- function(input, output) {
                        theme_void() + # Remove background, grid, and axis marks
                        labs(title = "Race Category Diagnosed Ratio") +
                        geom_text(aes(label = n), position = position_stack(vjust = 0.5)) +  # Add counts as labels
-                       annotate("text", x = Inf, y = Inf, label = paste("Total samples:", total_samples), hjust = 0.5, vjust = -1)
+                       annotate("text", x = Inf, y = Inf, label = paste("Valid Filtered Samples:", total_filtered_samples, "NA:", (total_samples-total_filtered_samples)), hjust = 0.5, vjust = -1)
                    },
                    
-                   "survival_status" = {
+                   "ethinicity" = {
                      
-                     # Survival Status Count
-                     sruvival_status_counts <- filt_data %>%
-                       count(`Overall Survival Status`) # (Sex column in the filtered_sex dataframe)
+                     # Ethnicity Category Count
+                     ethnicity_counts <- filt_data %>%
+                       count(`Ethnicity Category`) # (Sex column in the filtered_sex dataframe)
                      
                      # Create the pie chart
-                     ggplot(sruvival_status_counts, aes(x = "", y = n, fill = `Overall Survival Status`)) +
+                     ggplot(ethnicity_counts, aes(x = "", y = n, fill = `Ethnicity Category`)) +
                        geom_bar(stat = "identity", width = 1) +
                        coord_polar("y", start = 0) +  # Making it a Pie Chart
                        theme_void() + # Remove background, grid, and axis marks
-                       labs(title = "Survival Status") +
-                       scale_fill_manual(values = c("#5CB85C", "#D9534F")) +
+                       labs(title = "Ethnicity Category Diagnosed Ratio") +
                        geom_text(aes(label = n), position = position_stack(vjust = 0.5)) +  # Add counts as labels
-                       annotate("text", x = Inf, y = Inf, label = paste("Total samples:", total_samples), hjust = 0.5, vjust = -1)
-                   },
+                       annotate("text", x = Inf, y = Inf, label = paste("Valid Filtered Samples:", total_filtered_samples, "NA:", (total_samples-total_filtered_samples)),  hjust = 0.5, vjust = -1)
+                   }
                    
-                   "mutation_count" = {
-                     
-                     # Create the plot
-                     filt_data %>%
-                       ggplot( aes(x=`Mutation Count`)) +
-                       geom_density(fill="#69b3a2", color="#e9ecef", alpha=0.8) +
-                       labs(title = "Mutation Count Distribution", x = "Mutation Count", y = "") +
-                       annotate("text", label = paste("Total samples:", total_samples), 
-                                x = Inf, y = Inf, hjust = 1.2, vjust = 1.9)
-                     },
-                   
-                   "neploasm_disease_stage" = {
-                   
-                     # Count the different stages counts
-                     stage_counts <- filt_data %>%
-                       count(`Neoplasm Disease Stage American Joint Committee on Cancer Code`)
-                     
-                     # Create the bar chart
-                     filt_data %>% 
-                       ggplot(aes(x = `Neoplasm Disease Stage American Joint Committee on Cancer Code`)) +
-                       geom_bar(fill = "#F8766D", color = "black") +
-                       labs(title = "Distribution of Neoplasm Disease Stages", x = "Stage", y = "Count") +
-                       annotate("text", label = paste("Total samples:", total_samples), 
-                                x = Inf, y = Inf, hjust = 1.2, vjust = 1.9)
-                       
-                   })
+                 )
     
     print(plot)
   })
