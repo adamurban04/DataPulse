@@ -5,6 +5,7 @@ library(readr)
 library(ggplot2)
 library(dplyr) # Data Manipulation (%>%)
 library(DT)    # for adding searchability to said Datatables
+library(markdown)
 
 
 # Read the TSV file for Dataset
