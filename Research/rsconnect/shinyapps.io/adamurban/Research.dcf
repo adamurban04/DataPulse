@@ -1,0 +1,12 @@
+name: Research
+title: Research
+username: adamurban
+account: adamurban
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 12126019
+bundleId: 8742012
+url: https://adamurban.shinyapps.io/Research/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
