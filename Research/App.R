@@ -56,6 +56,11 @@ ui <- fluidPage(theme = shinytheme("yeti"),
                   .compact-select {
                     margin-bottom: 10px;
                   }
+                  .image-box {
+                    width: 512px;
+                    height: 512px; 
+                 
+                  }
                 "))),
                 
                 # Navigation
@@ -183,9 +188,9 @@ ui <- fluidPage(theme = shinytheme("yeti"),
                                                     choices = list.files("www/manifest1603198545583/NSCLCRadiomics/one", pattern = "\\.jpg$"))
                                     )
                              ),
-                             column(9,
+                             
+                             column(12, class = "image-box",
                                     plotOutput("jpg_image"),
-                                    textOutput("file_path_debug")  # Add a text output for debugging
                              )
                            )
                   ),
@@ -212,11 +217,11 @@ server <- function(input, output) {
   output$data_dsout1 <- renderDataTable({
     datatable(luad_data1, options = list(scrollX = TRUE, lengthMenu = list(c(10, 25, 50, -1), c('10', '25', '50', 'All'))))
   })
- 
+  
   output$data_dsout2 <- renderDataTable({
     datatable(nsclc_data2, options = list(scrollX = TRUE, lengthMenu = list(c(10, 25, 50, -1), c('10', '25', '50', 'All'))))
   })
-
+  
   output$data_dsout3 <- renderDataTable({
     datatable(luad_data3, options = list(scrollX = TRUE, lengthMenu = list(c(10, 25, 50, -1), c('10', '25', '50', 'All'))))
   })
