@@ -77,6 +77,13 @@ ui <- fluidPage(
                             height: 512px;
 
                           }
+                           .plot-container {
+                             margin-top: 20px;
+                             margin-bottom: 20px;
+                             padding: 10px;
+                             border: 1px solid #ddd;
+                             border-radius: 5px;
+                           }
                         "
     )
   )),
@@ -248,7 +255,27 @@ ui <- fluidPage(
       column(12, class = "compact-container", div(class = "compact-select", htmlOutput("total_samples")))
     ),
     
-    # UI Tab 3: IMAGES
+    # UI Tab 3: CORRELATION MATRIX
+    tabPanel("CORRELATION MATRIX", fluidRow(
+      mainPanel(
+      radioButtons(
+        inputId = "cor_matrix_choice",
+        label = "Choose Dataset:",
+        choices = list(
+          "LUAD TCGA Pan Can Atlas 2018 Clinical Data" = "luad_data1",
+          "NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2",
+          "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4"
+        )
+      ),
+      class = "compact-select",
+      plotOutput("corrPlot", height = "800px")
+      ),
+      
+      
+      
+      )),
+    
+    # UI Tab 4: IMAGES
     tabPanel("IMAGES", fluidRow(
       column(
         3,
@@ -271,7 +298,7 @@ ui <- fluidPage(
       column(12, class = "image-box", plotOutput("jpg_image"), )
     )),
     
-    # UI Tab 4: REPORT
+    # UI Tab 5: REPORT
     tabPanel("REPORT", mainPanel(includeMarkdown("www/Report.md")))
     
   )
@@ -462,7 +489,44 @@ server <- function(input, output) {
     )
   })
   
-  # SERVER Tab 3: IMAGES
+  # SERVER Tab 3: CORRELATION MATRIX
+  
+  # Diagnosis Age: Has a negative correlation with variables such as Overall Survival (Months) and Progress Free Survival (Months), indicating that older patients may have poorer outcomes
+  
+  # Select numeric columns for correlation analysis
+  
+  
+  numeric_data <- reactive({
+    selected_data <- switch(
+      input$cor_matrix_choice,
+      "luad_data1" = luad_data1 %>% select_if(is.numeric) %>% na.omit(),
+      "nsclc_data2" = nsclc_data2 %>% select_if(is.numeric) %>% na.omit(),
+      "luad_data4" = luad_data4 %>% select_if(is.numeric) %>% na.omit())
+    
+    # Check for columns with zero variance and remove them
+    selected_data <- selected_data[, apply(selected_data, 2, function(x) var(x) != 0)]
+    return(selected_data)
+  })
+
+  
+  
+  
+  # Render the correlation plot
+  output$corrPlot <- renderPlot({
+    if (ncol(numeric_data()) > 1) {
+      cor_matrix <- cor(numeric_data(), use = "complete.obs")
+      par(mar = c(2, 2, 1, 1))  # Adjust margin if necessary
+      corrplot(cor_matrix, method = "color", tl.cex = 0.7, 
+               title = "Correlation Matrix", mar = c(0, 0, 1, 0),
+               col = colorRampPalette(c("blue", "white", "red"))(100),
+               number.cex = 0.7, tl.col = "black")
+    } else {
+      plot.new()
+      text(0.5, 0.5, "Not enough numeric columns for correlation analysis.")
+    }
+  })
+  
+  # SERVER Tab 4: IMAGES
   
   # Function to render selected JPG image
   output$jpg_image <- renderPlot({
@@ -482,7 +546,7 @@ server <- function(input, output) {
     rasterImage(img, 0, 0, 1, 1)
   })
   
-  # SERVER Tab 4: REPORT
+  # SERVER Tab 5: REPORT
   
   # Output for the report text file
   output$research_report <- renderText({
