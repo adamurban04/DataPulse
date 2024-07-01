@@ -595,16 +595,32 @@ server <- function(input, output) {
   
   
   
+  # Define the reactive expression for selected columns
+  selected_columns <- reactive({
+    # Use switch to select the dataset based on user input
+    switch(
+      input$cor_matrix_choice,
+      "luad_data1" = numeric_data()[, c("Diagnosis Age", "Mutation Count", "Overall Survival (Months)")],
+      "nsclc_data2" = numeric_data()[, c("age", "Survival.time")],
+      "luad_data4" = numeric_data()[, c("Age", "Mutation Count", "Overall survival months", "Person Cigarette Smoking History Pack Year Value")]
+    )
+  })
+  
   # Render the correlation plot
   output$corrPlot <- renderPlot({
-    if (ncol(numeric_data()) > 1) {
-      cor_matrix <- cor(numeric_data(), use = "complete.obs")
-      par(mar = c(2, 2, 1, 1))  # Adjust margin if necessary
-      corrplot(cor_matrix, method = "color", tl.cex = 0.7, 
+    # Check if there are more than one numeric columns
+    if (ncol(selected_columns()) > 1) {
+      # Calculate the correlation matrix
+      cor_matrix <- cor(selected_columns(), use = "complete.obs")
+      # Set the margins for the plot
+      par(mar = c(2, 2, 1, 1))
+      # Plot the correlation matrix
+      corrplot(cor_matrix, method = "color", tl.cex = 1.4, 
                title = "Correlation Matrix", mar = c(0, 0, 1, 0),
                col = colorRampPalette(c("blue", "white", "red"))(100),
                number.cex = 0.7, tl.col = "black")
     } else {
+      # Display a message if not enough numeric columns are present
       plot.new()
       text(0.5, 0.5, "Not enough numeric columns for correlation analysis.")
     }
