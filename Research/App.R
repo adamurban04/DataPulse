@@ -4,11 +4,12 @@ library(shinythemes)
 library(readr)
 library(ggplot2)  # Data Visualisation
 library(dplyr) # Data Manipulation (%>%)
-library(DT)    # for adding searchability to said Datatables
+library(DT)    # Searchability to Datatables
 library(markdown)
-library(jpeg)  # For handling JPG images
-library(Seurat) # For scRNA-seq data analysis
-library(plotly) # For Interactive Plots
+library(jpeg)  # JPG images
+library(Seurat) # scRNA-seq data analysis
+library(plotly) # Interactive Plots
+library(corrplot) # Correlation Matrix
 
 #Cmd+Shift+A to reformat code
 
@@ -258,22 +259,22 @@ ui <- fluidPage(
     # UI Tab 3: CORRELATION MATRIX
     tabPanel("CORRELATION MATRIX", fluidRow(
       mainPanel(
-      radioButtons(
-        inputId = "cor_matrix_choice",
-        label = "Choose Dataset:",
-        choices = list(
-          "LUAD TCGA Pan Can Atlas 2018 Clinical Data" = "luad_data1",
-          "NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2",
-          "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4"
-        )
+        radioButtons(
+          inputId = "cor_matrix_choice",
+          label = "Choose Dataset:",
+          choices = list(
+            "LUAD TCGA Pan Can Atlas 2018 Clinical Data" = "luad_data1",
+            "NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2",
+            "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4"
+          )
+        ),
+        class = "compact-select",
+        plotOutput("corrPlot", height = "800px")
       ),
-      class = "compact-select",
-      plotOutput("corrPlot", height = "800px")
-      ),
       
       
       
-      )),
+    )),
     
     # UI Tab 4: IMAGES
     tabPanel("IMAGES", fluidRow(
@@ -507,7 +508,7 @@ server <- function(input, output) {
     selected_data <- selected_data[, apply(selected_data, 2, function(x) var(x) != 0)]
     return(selected_data)
   })
-
+  
   
   
   
