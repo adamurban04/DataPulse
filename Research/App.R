@@ -7,7 +7,6 @@ library(dplyr) # Data Manipulation (%>%)
 library(DT)    # Searchability to Datatables
 library(markdown)
 library(jpeg)  # JPG images
-library(Seurat) # scRNA-seq data analysis
 library(plotly) # Interactive Plots
 library(corrplot) # Correlation Matrix
 
@@ -44,7 +43,7 @@ ui <- fluidPage(
   theme = shinytheme("yeti"),
   
   
-  # Custom CSS to style the Research Report text box (cmnd+opt+L to fold)
+  # HTML to style certain containers (cmnd+opt+L to fold)
   tags$head(tags$style(
     HTML(
       "
@@ -389,24 +388,58 @@ server <- function(input, output) {
         input$plot_choice_tabular1,
         "age" = {
           ggplot(filt_data, aes(x = `Diagnosis Age`)) +
-            geom_bar() +
+            geom_bar(fill = "skyblue",  color = "black") +
             labs(title = "Distribution of Diagnosis Age",
                  x = "Age", y = "Count")
         },
         "sex" = {
           sex_counts <- filt_data %>% count(Sex)
-          plot_ly(sex_counts, labels = ~Sex, values = ~n, type = 'pie', textinfo = 'label+percent', insidetextorientation = 'radial') %>%
-            layout(title = "Male/Female Diagnosed Ratio")
+          plot_ly(sex_counts, labels = ~Sex, values = ~n, type = 'pie', 
+                  textinfo = 'label+percent', insidetextorientation = 'radial',
+                  marker = list(colors = c('pink', 'skyblue'))) %>%
+            layout(title = list(text = "Male/Female Diagnosed Ratio", font = list(size = 20)),
+                   font = list(size = 18),
+                   margin = list(t = 80))
+          
+          
         },
         "race" = {
           race_counts <- filt_data %>% count(`Race Category`)
-          plot_ly(race_counts, labels = ~`Race Category`, values = ~n, type = 'pie', textinfo = 'label+percent', textposition = 'auto', hoverinfo = 'label+value') %>%
-            layout(title = 'Race Category Diagnosed Ratio', showlegend = TRUE, legend = list(x = 1, y = 0.5), margin = list(l = 20, r = 20, t = 30, b = 20))
+          
+          # Define a palette of colors for the pie chart
+          colors <- c('skyblue', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
+          
+          plot_ly(race_counts, labels = ~`Race Category`, values = ~n, type = 'pie', 
+                  textinfo = 'label+percent', textposition = 'outside', 
+                  hoverinfo = 'label+value',
+                  marker = list(colors = colors, 
+                                line = list(color = '#000000', width = 1)),
+                  textfont = list(color = colors)) %>%
+            layout(title = list(text = 'Race Category Diagnosed Ratio', font = list(size = 20)),
+                   showlegend = TRUE, 
+                   legend = list(x = 1, y = 0.5),
+                   margin = list(l = 20, r = 20, t = 80, b = 20),
+                   font = list(size = 15),
+                   uniformtext = list(minsize = 10, mode = 'show'))
+          
+          
         },
         "ethnicity" = {
           ethnicity_counts <- filt_data %>% count(`Ethnicity Category`)
-          plot_ly(ethnicity_counts, labels = ~`Ethnicity Category`, values = ~n, type = 'pie', textinfo = 'label+percent', textposition = 'auto', hoverinfo = 'label+value') %>%
-            layout(title = 'Ethnicity Category Diagnosed Ratio', showlegend = TRUE, legend = list(x = 1.1, y = 0.5), margin = list(l = 20, r = 20, t = 30, b = 20))
+          
+          colors <- c('#e5c787', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
+          plot_ly(ethnicity_counts, labels = ~`Ethnicity Category`, values = ~n, type = 'pie',
+                  textinfo = 'label+percent', textposition = 'outside', 
+                  hoverinfo = 'label+value',
+                  marker = list(colors = colors, 
+                                line = list(color = '#000000', width = 1)),
+                  textfont = list(color = colors)) %>%
+            layout(title = list(text = 'Ethnicity Category Diagnosed Ratio', font = list(size = 20)),
+                   showlegend = TRUE, 
+                   legend = list(x = 1, y = 0.5),
+                   margin = list(l = 20, r = 20, t = 80, b = 50),
+                   font = list(size = 15),
+                   uniformtext = list(minsize = 10, mode = 'show'))
         }
       )
     } else if (input$plot_data_choice_tabular == "nsclc_data2") {
@@ -414,13 +447,17 @@ server <- function(input, output) {
         input$plot_choice_tabular2,
         "age2" = {
           ggplot(filt_data, aes(x = age)) +
-            geom_histogram(binwidth = 5, fill = "skyblue", color = "black") +
-            labs(title = "Distribution of Age", x = "Age", y = "Count")
+            geom_histogram(binwidth = 1, fill = "skyblue", color = "black") +
+            labs(title = "Distribution of Diagnosis Age", x = "Age", y = "Count")
         },
         "sex2" = {
           sex_counts <- filt_data %>% count(gender)
-          plot_ly(sex_counts, labels = ~gender, values = ~n, type = 'pie', textinfo = 'label+percent', insidetextorientation = 'radial') %>%
-            layout(title = "Male/Female Diagnosed Ratio")
+          plot_ly(sex_counts, labels = ~gender, values = ~n, type = 'pie', 
+                  textinfo = 'label+percent', insidetextorientation = 'radial',
+                  marker = list(colors = c('pink', 'skyblue'))) %>%
+            layout(title = list(text = "Male/Female Diagnosed Ratio", font = list(size = 20)),
+                   font = list(size = 18),
+                   margin = list(t = 80))
         }
       )
     } else if (input$plot_data_choice_tabular == "luad_data3") {
@@ -428,23 +465,53 @@ server <- function(input, output) {
         input$plot_choice_tabular3,
         "age3" = {
           ggplot(filt_data, aes(x = `Diagnosis Age`)) +
-            geom_bar() +
+            geom_bar(fill = "skyblue",  color = "black") +
             labs(title = "Distribution of Diagnosis Age", x = "Age", y = "Count")
         },
         "sex3" = {
           sex_counts <- filt_data %>% count(Sex)
-          plot_ly(sex_counts, labels = ~Sex, values = ~n, type = 'pie', textinfo = 'label+percent', insidetextorientation = 'radial') %>%
-            layout(title = "Male/Female Diagnosed Ratio")
+          plot_ly(sex_counts, labels = ~Sex, values = ~n, type = 'pie', 
+                  textinfo = 'label+percent', insidetextorientation = 'radial',
+                  marker = list(colors = c('pink', 'skyblue'))) %>%
+            layout(title = list(text = "Male/Female Diagnosed Ratio", font = list(size = 20)),
+                   font = list(size = 18),
+                   margin = list(t = 80))
         },
         "race3" = {
           race_counts <- filt_data %>% count(`Race Category`)
-          plot_ly(race_counts, labels = ~`Race Category`, values = ~n, type = 'pie', textinfo = 'label+percent', insidetextorientation = 'radial') %>%
-            layout(title = "Race Category Diagnosed Ratio")
+          
+          # Define a palette of colors for the pie chart
+          colors <- c('skyblue', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
+          
+          plot_ly(race_counts, labels = ~`Race Category`, values = ~n, type = 'pie', 
+                  textinfo = 'label+percent', textposition = 'outside', 
+                  hoverinfo = 'label+value',
+                  marker = list(colors = colors, 
+                                line = list(color = '#000000', width = 1)),
+                  textfont = list(color = colors)) %>%
+            layout(title = list(text = 'Race Category Diagnosed Ratio', font = list(size = 20)),
+                   showlegend = TRUE, 
+                   legend = list(x = 1, y = 0.5),
+                   margin = list(l = 20, r = 20, t = 80, b = 20),
+                   font = list(size = 15),
+                   uniformtext = list(minsize = 10, mode = 'show'))
         },
         "ethnicity3" = {
           ethnicity_counts <- filt_data %>% count(`Ethnicity Category`)
-          plot_ly(ethnicity_counts, labels = ~`Ethnicity Category`, values = ~n, type = 'pie', textinfo = 'label+percent', textposition = 'auto', hoverinfo = 'label+value') %>%
-            layout(title = 'Ethnicity Category Diagnosed Ratio', showlegend = TRUE, legend = list(x = 1.1, y = 0.5), margin = list(l = 20, r = 20, t = 30, b = 20))
+          
+          colors <- c('#e5c787', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
+          plot_ly(ethnicity_counts, labels = ~`Ethnicity Category`, values = ~n, type = 'pie',
+                  textinfo = 'label+percent', textposition = 'outside', 
+                  hoverinfo = 'label+value',
+                  marker = list(colors = colors, 
+                                line = list(color = '#000000', width = 1)),
+                  textfont = list(color = colors)) %>%
+            layout(title = list(text = 'Ethnicity Category Diagnosed Ratio', font = list(size = 20)),
+                   showlegend = TRUE, 
+                   legend = list(x = 1, y = 0.5),
+                   margin = list(l = 20, r = 20, t = 80, b = 50),
+                   font = list(size = 15),
+                   uniformtext = list(minsize = 10, mode = 'show'))
         }
       )
     } else if (input$plot_data_choice_tabular == "luad_data4") {
@@ -452,18 +519,34 @@ server <- function(input, output) {
         input$plot_choice_tabular4,
         "age4" = {
           ggplot(filt_data, aes(x = Age)) +
-            geom_bar() +
+            geom_bar(fill = "skyblue",  color = "black") +
             labs(title = "Distribution of Diagnosis Age", x = "Age", y = "Count")
         },
         "sex4" = {
           sex_counts <- filt_data %>% count(Sex)
-          plot_ly(sex_counts, labels = ~Sex, values = ~n, type = 'pie', textinfo = 'label+percent', insidetextorientation = 'radial') %>%
-            layout(title = "Male/Female Diagnosed Ratio")
+          plot_ly(sex_counts, labels = ~Sex, values = ~n, type = 'pie', 
+                  textinfo = 'label+percent', insidetextorientation = 'radial',
+                  marker = list(colors = c('pink', 'skyblue'))) %>%
+            layout(title = list(text = "Male/Female Diagnosed Ratio", font = list(size = 20)),
+                   font = list(size = 18),
+                   margin = list(t = 80))
         },
         "ethnicity4" = {
           ethnicity_counts <- filt_data %>% count(`Ethnicity Category`)
-          plot_ly(ethnicity_counts, labels = ~`Ethnicity Category`, values = ~n, type = 'pie', textinfo = 'label+percent', textposition = 'auto', hoverinfo = 'label+value') %>%
-            layout(title = 'Ethnicity Category Diagnosed Ratio', showlegend = TRUE, legend = list(x = 1.1, y = 0.5), margin = list(l = 20, r = 20, t = 30, b = 20))
+          
+          colors <- c('#e5c787', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
+          plot_ly(ethnicity_counts, labels = ~`Ethnicity Category`, values = ~n, type = 'pie',
+                  textinfo = 'label+percent', textposition = 'outside', 
+                  hoverinfo = 'label+value',
+                  marker = list(colors = colors, 
+                                line = list(color = '#000000', width = 1)),
+                  textfont = list(color = colors)) %>%
+            layout(title = list(text = 'Ethnicity Category Diagnosed Ratio', font = list(size = 20)),
+                   showlegend = TRUE, 
+                   legend = list(x = 1, y = 0.5),
+                   margin = list(l = 20, r = 20, t = 80, b = 50),
+                   font = list(size = 15),
+                   uniformtext = list(minsize = 10, mode = 'show'))
         }
       )
     }
