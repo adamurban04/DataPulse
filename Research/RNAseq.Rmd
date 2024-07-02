@@ -1,0 +1,66 @@
+---
+title: "RNAseq Notebook"
+output:
+  html_notebook:
+    theme: simplex
+---
+
+This is an R Markdown Notebook showcasing scRNA-seq data analytics.  
+When you execute code within the notebook, the results appear beneath the code.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# PLAN:  
+1. load libraries 
+2. load the dataset (count data matrix or raw data and turn it into count data).  
+for handling raw data (almost 200GB) I need these tools:  
+- Cell Ranger: software by 10x Genomics for processing 10x Genomics single-cell RNA-seq data
+- STAR: A fast aligner for RNA-seq data
+- HTSeq: A tool for counting aligned reads.
+3. preprocessing (quality control)
+4. dimensionality reduction and clustering
+5. generate UMAP, t-SNE plots for visualizing cell clusters
+6. cell type annotation
+
+
+### 1. Libraries
+```{r}
+library(Seurat)
+if (!requireNamespace("remotes", quietly = TRUE)) {
+  install.packages("remotes")
+}
+remotes::install_github("mojaveazure/seurat-disk") # install SeuratDisk package from GitHub
+library(SeuratDisk)
+```
+
+  
+### 2. Load UMI Count Data
+Load the UMI (Unique Molecular Identifier) Count Data matrix from 10x genomics.
+UMI Count Data measures the gene expression in individual cells by sequencing the RNA present in each cell.
+```{r}
+hdf5_obj <- Read10X_h5(filename = "www/SC3_v3_NextGem_DI_CellPlex_CSP_DTC_Sorted_30K_Multiplex_count_raw_feature_bc_matrix.h5",
+           use.names = TRUE,
+           unique.features = TRUE)
+
+
+# Load HDF5 file
+h5_data <- h5read(h5_file, "/matrix")
+
+# Convert to Seurat object
+seurat_object <- CreateSeuratObject(counts = h5_data)
+                   
+```
+
+
+
+
+
+
+
+
+
+
+
+

@@ -34,7 +34,64 @@ read_jpg_files <- function(path) {
 }
 
 
+# Helper Function to read and convert DICOM to PNG with meaningful file names
+convert_dicom_to_png <- function(file_path, output_dir) {
+  dicom_data <- readDICOMFile(file_path)
+  img_data <- dicom_data$img
+  
+  # Extract original file name without extension
+  file_name <- tools::file_path_sans_ext(basename(file_path))
+  
+  # Ensure the image data is numeric and properly scaled
+  if (is.matrix(img_data) || is.array(img_data)) {
+    img_data <- as.numeric(img_data)
+    img_data <- img_data / max(img_data)  # Scale to [0, 1]
+    img_data <- matrix(img_data, nrow = nrow(dicom_data$img), ncol = ncol(dicom_data$img))
+    
+    # Construct output path with meaningful file name
+    output_path <- file.path(output_dir, paste0(file_name, ".png"))
+    
+    writePNG(img_data, output_path)
+    
+    # Return the output path
+    return(output_path)
+  } else {
+    stop("Image data is not in the correct format")
+  }
+}
 
+# Define datasets with titles and corresponding paths
+datasets <- list(
+  "09-18-2008-StudyID-NA-69331" = "www/0.000000-NA-82046",
+  "01-01-2014-StudyID-NA-34270" = "www/1.000000-NA-28595",
+  "01-01-2014-StudyID-NA-85095" = "www/1.000000-NA-61228")
+
+# Helper Function to scan all DICOM files in a directory
+scan_dicom_files <- function(directory_path) {
+  if (dir.exists(directory_path)) {
+    dicom_files <- list.files(directory_path, pattern = "\\.dcm$", full.names = TRUE)
+    if (length(dicom_files) > 0) {
+      png_files <- lapply(dicom_files, function(dcm_file) {
+        png_file <- tools::file_path_sans_ext(dcm_file) %>% paste0(".png")
+        if (!file.exists(png_file)) {
+          tryCatch({
+            im <- oro.dicom::readDICOM(dcm_file)
+            png::writePNG(im, png_file)
+          }, error = function(e) {
+            warning(paste("Error converting", dcm_file, ": ", e$message))
+          })
+        }
+        png_file
+      })
+      return(unlist(png_files))
+    } else {
+      warning("No DICOM files found in directory:", directory_path)
+      return(NULL)
+    }
+  } else {
+    stop("Directory does not exist:", directory_path)
+  }
+}
 
 
 
@@ -277,26 +334,17 @@ ui <- fluidPage(
     
     # UI Tab 4: IMAGES
     tabPanel("IMAGES", fluidRow(
-      column(
-        3,
-        class = "compact-container",
-        div(
-          class = "compact-select",
-          selectInput(
-            "jpg_file_choice",
-            "Choose JPG File:",
-            choices = list.files("www/manifest1603198545583/NSCLCRadiomics/images", pattern = "\\.jpg$")
-          )
+      sidebarLayout(
+        sidebarPanel(
+          selectInput("dataset_selector", "Choose Dataset:", choices = names(datasets)),
+          sliderInput("image_slider", "Image Number", min = 1, max = 1, value = 1, step = 1)
         ),
-        h4(HTML("<u>x.abc.jpg</u>")),
-        h5(HTML("<i>x</i> for patient")),
-        h5(HTML("<i>abc</i> for picture in sequence"))
-        
-        
-      ),
-      
-      column(12, class = "image-box", plotOutput("jpg_image"), )
-    )),
+        mainPanel(
+          textOutput("image_title"),
+          plotOutput("image_display")
+        )
+      ))
+    ),
     
     # UI Tab 5: REPORT
     tabPanel("REPORT", mainPanel(includeMarkdown("www/Report.md")))
@@ -307,7 +355,7 @@ ui <- fluidPage(
 
 
 # Define server function
-server <- function(input, output) {
+server <- function(input, output, session) {
   
   # SERVER Tab 1: DATA
   
@@ -627,24 +675,24 @@ server <- function(input, output) {
   })
   
   # SERVER Tab 4: IMAGES
+  # Initialize reactiveVal to hold images
+  images <- reactiveVal(NULL)
   
-  # Function to render selected JPG image
-  output$jpg_image <- renderPlot({
-    req(input$jpg_file_choice)  # Ensure a file is selected
-    
-    file_path <- file.path("www/manifest1603198545583/NSCLCRadiomics/images", input$jpg_file_choice)
-    
-    # Use jpeg package to read and display the JPG image
-    img <- readJPEG(file_path)
-    
-    # Plot the image
-    plot(
-      0, 0, type = "n",
-      xlim = c(0, 1), ylim = c(0, 1),
-      xlab = "", ylab = "", axes = FALSE
-    )
-    rasterImage(img, 0, 0, 1, 1)
-  })
+  # Observe the dataset_selector input
+  observeEvent(input$dataset_selector, {
+    selected_path <- datasets[[input$dataset_selector]]
+    if (!is.null(selected_path)) {
+      all_images <- scan_dicom_files(selected_path)
+      images(all_images)  # Update the reactiveVal images with all_images
+      updateSliderInput(session, "image_slider", min = 1, max = length(all_images), value = 1)
+    }
+  }, ignoreNULL = TRUE)
+  
+  # Render the image based on the slider input
+  output$image_display <- renderImage({
+    req(images())  # Ensure images() is not NULL before rendering
+    list(src = images()[input$image_slider], contentType = "image/png")
+  }, deleteFile = FALSE)
   
   # SERVER Tab 5: REPORT
   
