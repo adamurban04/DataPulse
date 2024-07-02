@@ -7,6 +7,5 @@ library(dplyr) # Data Manipulation (%>%)
 library(DT)    # for adding searchability to said Datatables
 library(markdown)
 library(jpeg)  # For handling JPG images
-library(Seurat) # For scRNA-seq data analysis
 library(plotly) # For Interactive Plots
 

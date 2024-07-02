@@ -62,6 +62,7 @@ convert_dicom_to_png <- function(file_path, output_dir) {
 
 # Define datasets with titles and corresponding paths
 datasets <- list(
+  "09-24-2006-StudyID-NA-27873" = "www/0.000000-NA-20785",
   "09-18-2008-StudyID-NA-69331" = "www/0.000000-NA-82046",
   "01-01-2014-StudyID-NA-34270" = "www/1.000000-NA-28595",
   "01-01-2014-StudyID-NA-85095" = "www/1.000000-NA-61228")

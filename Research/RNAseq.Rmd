@@ -27,7 +27,7 @@ for handling raw data (almost 200GB) I need these tools:
 
 ### 1. Libraries
 ```{r}
-library(Seurat)
+# library(Seurat)
 if (!requireNamespace("remotes", quietly = TRUE)) {
   install.packages("remotes")
 }
