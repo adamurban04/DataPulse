@@ -1,3 +1,12 @@
+# _________________________________
+# Tool for identifying Data Bias
+# by Adam Urban and James Conolly 
+# _________________________________
+# first v: 29.5.2024
+# last v: 5.7.2024
+# (Cmd+Shift+A to reformat code)
+
+
 # Load R packages
 library(shiny)  # Shiny App
 library(shinythemes)
@@ -9,8 +18,13 @@ library(markdown)
 library(jpeg)  # JPG images
 library(plotly) # Interactive Plots
 library(corrplot) # Correlation Matrix
+library(table1) # Descriptive Tables
+library(tidyr)
 
-#Cmd+Shift+A to reformat code
+
+
+
+
 
 # Read the TSV/CSV file for Datasets
 
@@ -23,6 +37,16 @@ luad_data3 <- read_tsv("www/luad_tcga_firehose_legacy_clinical_data.tsv")
 # https://www.cbioportal.org/study/clinicalData?id=luad_oncosg_2020
 luad_data4 <- read_tsv("www/luad_oncosg_2020_clinical_data.tsv")
 
+datasets_clinical <- list("LUAD TCGA" = luad_data1, "NSCLC Radiomics" = nsclc_data2, "LUAD TCGA Firehose" = luad_data3, "LUAD OncoSG" = luad_data4)
+
+# Datasets of images
+datasets <- list(
+  "NSCLC LUNG1-001" = "www/0.000000-NA-20785",
+  "NSCLC LUNG1-002" = "www/0.000000-NA-82046",
+  "NSCLC LUNG1-003" = "www/1.000000-NA-28595",
+  "NSCLC LUNG1-004" = "www/1.000000-NA-61228")
+
+
 
 
 
@@ -33,8 +57,7 @@ read_jpg_files <- function(path) {
   return(files)
 }
 
-
-# Helper Function to read and convert DICOM to PNG with meaningful file names
+# Helper Function to read and convert DICOM to PNG
 convert_dicom_to_png <- function(file_path, output_dir) {
   dicom_data <- readDICOMFile(file_path)
   img_data <- dicom_data$img
@@ -48,9 +71,8 @@ convert_dicom_to_png <- function(file_path, output_dir) {
     img_data <- img_data / max(img_data)  # Scale to [0, 1]
     img_data <- matrix(img_data, nrow = nrow(dicom_data$img), ncol = ncol(dicom_data$img))
     
-    # Construct output path with meaningful file name
+    # Construct output path
     output_path <- file.path(output_dir, paste0(file_name, ".png"))
-    
     writePNG(img_data, output_path)
     
     # Return the output path
@@ -59,13 +81,6 @@ convert_dicom_to_png <- function(file_path, output_dir) {
     stop("Image data is not in the correct format")
   }
 }
-
-# Define datasets with titles and corresponding paths
-datasets <- list(
-  "09-24-2006-StudyID-NA-27873" = "www/0.000000-NA-20785",
-  "09-18-2008-StudyID-NA-69331" = "www/0.000000-NA-82046",
-  "01-01-2014-StudyID-NA-34270" = "www/1.000000-NA-28595",
-  "01-01-2014-StudyID-NA-85095" = "www/1.000000-NA-61228")
 
 # Helper Function to scan all DICOM files in a directory
 scan_dicom_files <- function(directory_path) {
@@ -96,6 +111,13 @@ scan_dicom_files <- function(directory_path) {
 
 
 
+
+
+
+
+
+
+
 # Define UI
 ui <- fluidPage(
   theme = shinytheme("yeti"),
@@ -115,12 +137,12 @@ ui <- fluidPage(
                           }
                           .summary-text-box {
                             width: 100%;
-                            height: 150px;
+                            height: 350px;
                             overflow-y: scroll;
                             white-space: pre-wrap;
                             word-wrap: break-word;
                             border: 1px solid #ccc;
-                            padding: 10px;
+                            padding: 20px;
                             background-color: #f9f9f9;
                           }
                           .compact-container {
@@ -142,7 +164,41 @@ ui <- fluidPage(
                              border: 1px solid #ddd;
                              border-radius: 5px;
                            }
-                        "
+                           .image-container {
+
+                             display: flex;
+
+                             justify-content: center;
+
+                             align-items: center;
+
+                             width: 100%;
+
+                             height: auto;
+
+                             }
+
+                            .image-container img {
+
+                            max-width: 100%;
+
+                             height: auto;
+
+                            }
+                            .space-before-panel {
+                            margin-top: 50px;
+                            }
+                            .container-box {
+                            background-color: #f9f9f9;
+                            padding: 20px;
+                            border-radius: 10px;
+                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                            }
+                            .table1-output {
+                            width: 100%;
+                            overflow-x: auto;
+                            }
+      "
     )
   )),
   
@@ -194,8 +250,28 @@ ui <- fluidPage(
         condition = "input.data_choice == 'tabular' && input.data_choice_tabular == 'luad_data1'",
         h1("LUAD TCGA Pan Can Atlas 2018 Clinical Data"),
         div(class = "scrollable-table", DTOutput("data_dsout1")),
-        h4("Summary of LUAD TCGA Pan Can Atlas 2018 Clinical Data"),
-        div(class = "summary-text-box", verbatimTextOutput("data_summary1"))
+        div(class = "space-before-panel"),
+        
+        h3("Summary in R"),
+        div(class = "summary-text-box", verbatimTextOutput("data_summary1")),
+        div(class = "space-before-panel"),
+        
+        
+        h3("Descriptive Statistics using table1 Package"),
+        dashboardSidebar(
+          selectInput('dataset_t1_choice', 'Select Dataset', choices = names(datasets_clinical)),
+          uiOutput("variable_select") # Dynamic variable selection based on chosen dataset
+        ),
+        dashboardBody(
+          box(
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            div(class = "container-box",
+                div(class = "table1-output", tableOutput("T1"))
+            )
+          )
+        )
       ),
       # Tabular NSCLC 2
       conditionalPanel(
@@ -326,7 +402,7 @@ ui <- fluidPage(
           )
         ),
         class = "compact-select",
-        plotOutput("corrPlot", height = "800px")
+        plotOutput("corrPlot", width = "1024", height = "1024px")
       ),
       
       
@@ -342,7 +418,7 @@ ui <- fluidPage(
         ),
         mainPanel(
           textOutput("image_title"),
-          plotOutput("image_display")
+          plotOutput("image_display", width = "512px", height = "512px")
         )
       ))
     ),
@@ -386,6 +462,74 @@ server <- function(input, output, session) {
   # Apply the functions to each data frame and name
   mapply(render_data_table, data_list, output_names)
   mapply(render_data_summary, data_list, summary_names)
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  # Reactive expression to get selected dataset
+  selected_data_t1 <- reactive({
+    datasets_clinical[[input$dataset_t1_choice]]
+  })
+  
+  # Dynamic UI for selecting variable based on selected dataset
+  output$variable_select <- renderUI({
+    req(selected_data_t1())
+    selectInput('cat_var', 'Variable', choices = names(selected_data_t1()))
+  })
+  
+  # Reactive expression to filter data based on selected group
+  filtered_data_t1 <- reactive({
+    data_t1 <- selected_data_t1()
+    
+    # Common columns to use if they exist in the dataset
+    common_columns_t1 <- c("Diagnosis Age", "age", "Age", "sex", "Sex", "Gender", "Race Category", "Neoplasm Disease Stage American Joint Committee on Cancer Code")
+    
+    # Check which common columns are present in the dataset
+    present_common_columns_t1 <- intersect(common_columns_t1, colnames(data_t1))
+    
+    if (!is.null(input$cat_var) && input$cat_var != "" && input$cat_var %in% colnames(data_t1)) {
+      selected_columns_t1 <- c(present_common_columns_t1, input$cat_var)
+      
+      selected_data_t1 <- data_t1 %>%
+        select(any_of(selected_columns_t1)) %>%
+        drop_na()
+      
+      return(selected_data_t1)
+    } else {
+      return(data_t1 %>% select(any_of(present_common_columns_t1)) %>% drop_na())
+    }
+  })
+  
+  # Render the table
+  output$T1 <- renderTable({
+    data_t1 <- filtered_data_t1()
+    
+    # Generate descriptive statistics table with stratification
+    if (!is.null(input$cat_var) && input$cat_var != "" && input$cat_var %in% colnames(data_t1)) {
+      stratified_var <- input$cat_var
+      table1(~ . | data_t1[[stratified_var]], data = data_t1, render.continuous=c(.="Mean (SD)"))
+    } else {
+      table1(~ ., data = data_t1, render.continuous=c(.="Mean (SD)"))
+    }
+  })
+  
+
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   
   
@@ -603,6 +747,7 @@ server <- function(input, output, session) {
     plot
   })
   
+  
   total_samples <- reactive({
     dataset_choice <- switch(
       input$plot_data_choice_tabular,
@@ -676,6 +821,7 @@ server <- function(input, output, session) {
   })
   
   # SERVER Tab 4: IMAGES
+  
   # Initialize reactiveVal to hold images
   images <- reactiveVal(NULL)
   
