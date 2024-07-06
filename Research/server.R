@@ -1,407 +1,3 @@
----
-title: "Shiny App Notebook"
-output:
-  html_notebook:
-    theme: simplex
----
-
-Shiny App for insights into Clinical and Image datasets and data visualizations.\
-(Run the whole code to run the app)
-
-# Contents
-
-1.  [Libraries](#libraries)
-2.  [Datasets](#datasets)
-3.  [Helper Functions](#helper-functions)
-4.  [UI](#ui)
-5.  [Server Function](#server-function)
-
-### 1. Libraries {#libraries}
-
-```{r}
-# Load R packages
-library(shiny)  # Shiny App
-library(shinythemes)
-library(readr)
-library(ggplot2)  # Data Visualisation
-library(dplyr) # Data Manipulation (%>%)
-library(DT)    # Searchability to Datatables
-library(markdown)
-library(jpeg)  # JPG images
-library(plotly) # Interactive Plots
-library(corrplot) # Correlation Matrix
-```
-
-### 2. Datasets {#datasets}
-
-```{r}
-# Read the TSV/CSV file for Datasets
-
-# https://www.cbioportal.org/study/clinicalData?id=luad_tcga_pan_can_atlas_2018
-luad_data1 <- read_tsv("www/luad_tcga_pan_can_atlas_2018_clinical_data.tsv")
-# https://www.cancerimagingarchive.net/collection/nsclc-radiomics/
-nsclc_data2 <- read.csv("www/manifest1603198545583/NSCLC-Radiomics-Lung1.clinical-version3-Oct-2019.csv")
-# https://www.cbioportal.org/study/clinicalData?id=luad_tcga
-luad_data3 <- read_tsv("www/luad_tcga_firehose_legacy_clinical_data.tsv")
-# https://www.cbioportal.org/study/clinicalData?id=luad_oncosg_2020
-luad_data4 <- read_tsv("www/luad_oncosg_2020_clinical_data.tsv")
-
-# Datasets of images
-datasets <- list(
-  "NSCLC LUNG1-001" = "www/0.000000-NA-20785",
-  "NSCLC LUNG1-002" = "www/0.000000-NA-82046",
-  "NSCLC LUNG1-003" = "www/1.000000-NA-28595",
-  "NSCLC LUNG1-004" = "www/1.000000-NA-61228")
-```
-
-### 3. Helper Functions {#helper-functions}
-
-```{r}
-# Helper function to read JPG files
-read_jpg_files <- function(path) {
-  files <- list.files(path, full.names = TRUE, pattern = "\\.jpg$")
-  return(files)
-}
-
-# Helper Function to read and convert DICOM to PNG
-convert_dicom_to_png <- function(file_path, output_dir) {
-  dicom_data <- readDICOMFile(file_path)
-  img_data <- dicom_data$img
-  
-  # Extract original file name without extension
-  file_name <- tools::file_path_sans_ext(basename(file_path))
-  
-  # Ensure the image data is numeric and properly scaled
-  if (is.matrix(img_data) || is.array(img_data)) {
-    img_data <- as.numeric(img_data)
-    img_data <- img_data / max(img_data)  # Scale to [0, 1]
-    img_data <- matrix(img_data, nrow = nrow(dicom_data$img), ncol = ncol(dicom_data$img))
-    
-    # Construct output path
-    output_path <- file.path(output_dir, paste0(file_name, ".png"))
-    writePNG(img_data, output_path)
-    
-    # Return the output path
-    return(output_path)
-  } else {
-    stop("Image data is not in the correct format")
-  }
-}
-
-# Helper Function to scan all DICOM files in a directory
-scan_dicom_files <- function(directory_path) {
-  if (dir.exists(directory_path)) {
-    dicom_files <- list.files(directory_path, pattern = "\\.dcm$", full.names = TRUE)
-    if (length(dicom_files) > 0) {
-      png_files <- lapply(dicom_files, function(dcm_file) {
-        png_file <- tools::file_path_sans_ext(dcm_file) %>% paste0(".png")
-        if (!file.exists(png_file)) {
-          tryCatch({
-            im <- oro.dicom::readDICOM(dcm_file)
-            png::writePNG(im, png_file)
-          }, error = function(e) {
-            warning(paste("Error converting", dcm_file, ": ", e$message))
-          })
-        }
-        png_file
-      })
-      return(unlist(png_files))
-    } else {
-      warning("No DICOM files found in directory:", directory_path)
-      return(NULL)
-    }
-  } else {
-    stop("Directory does not exist:", directory_path)
-  }
-}
-```
-
-### 4. UI {#ui}
-
-```{r}
-# Define UI
-# Define UI
-ui <- fluidPage(
-  theme = shinytheme("yeti"),
-  
-  
-  # HTML to style certain containers (cmnd+opt+L to fold)
-  tags$head(tags$style(
-    HTML(
-      "
-                          .scrollable-table {
-                            overflow-x: auto;
-                            white-space: nowrap;
-                            width: 100%;
-                          }
-                          .scrollable-table table {
-                            width: 100%;
-                          }
-                          .summary-text-box {
-                            width: 100%;
-                            height: 500px;
-                            overflow-y: scroll;
-                            white-space: pre-wrap;
-                            word-wrap: break-word;
-                            border: 1px solid #ccc;
-                            padding: 10px;
-                            background-color: #f9f9f9;
-                          }
-                          .compact-container {
-                            margin: 0;
-                            padding: 10px;
-                          }
-                          .compact-select {
-                            margin-bottom: 10px;
-                          }
-                          .image-box {
-                            width: 512px;
-                            height: 512px;
-
-                          }
-                           .plot-container {
-                             margin-top: 20px;
-                             margin-bottom: 20px;
-                             padding: 10px;
-                             border: 1px solid #ddd;
-                             border-radius: 5px;
-                           }
-                           .image-container {
-
-                             display: flex;
-
-                             justify-content: center;
-
-                             align-items: center;
-
-                             width: 100%;
-
-                             height: auto;
-
-                             }
-
-                            .image-container img {
-
-                            max-width: 100%;
-
-                             height: auto;
-
-                            }
-                        "
-    )
-  )),
-  
-  # Navigation
-  navbarPage(
-    "UPSTaRT",
-    # UI Tab 1: DATA
-    tabPanel(
-      "DATA",
-      fluidRow(
-        column(
-          12,
-          class = "compact-container",
-          div(
-            class = "compact-select",
-            selectInput(
-              "data_choice",
-              "Choose Data Type:",
-              choices = c("Tabular Data" = "tabular", "Image Data" = "image")
-            )
-          ),
-          # Tabular
-          conditionalPanel(
-            condition = "input.data_choice == 'tabular'",
-            radioButtons(
-              inputId = "data_choice_tabular",
-              label = "Choose Dataset:",
-              choices = list(
-                "LUAD TCGA Pan Can Atlas 2018 Clinical Data" = "luad_data1",
-                "NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2",
-                "LUAD TCGA Firehose Legacy Clinical Data" = "luad_data3",
-                "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4"
-              )
-            )
-          ),
-          # Image
-          conditionalPanel(
-            condition = "input.data_choice == 'image'",
-            radioButtons(
-              inputId = "data_choice_image",
-              label = "Choose Dataset:",
-              choices = list("NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2")
-            )
-          )
-        )
-      ),
-      # Tabular LUAD 1
-      conditionalPanel(
-        condition = "input.data_choice == 'tabular' && input.data_choice_tabular == 'luad_data1'",
-        h1("LUAD TCGA Pan Can Atlas 2018 Clinical Data"),
-        div(class = "scrollable-table", DTOutput("data_dsout1")),
-        h4("Summary of LUAD TCGA Pan Can Atlas 2018 Clinical Data"),
-        div(class = "summary-text-box", verbatimTextOutput("data_summary1"))
-      ),
-      # Tabular NSCLC 2
-      conditionalPanel(
-        condition = "input.data_choice == 'tabular' && input.data_choice_tabular == 'nsclc_data2'",
-        h1("NSCLC-Radiomics Lung1 Clinical Data"),
-        div(class = "scrollable-table", DTOutput("data_dsout2")),
-        h4("Summary of NSCLC-Radiomics Lung1 Clinical Data"),
-        div(class = "summary-text-box", verbatimTextOutput("data_summary2"))
-      ),
-      # Tabular LUAD 3
-      conditionalPanel(
-        condition = "input.data_choice == 'tabular' && input.data_choice_tabular == 'luad_data3'",
-        h1("LUAD TCGA Firehose Legacy Clinical Data"),
-        div(class = "scrollable-table", DTOutput("data_dsout3")),
-        h4("Summary of LUAD TCGA Firehose Legacy Clinical Data"),
-        div(class = "summary-text-box", verbatimTextOutput("data_summary3"))
-      ),
-      # Tabular LUAD 4
-      conditionalPanel(
-        condition = "input.data_choice == 'tabular' && input.data_choice_tabular == 'luad_data4'",
-        h1("LUAD (OncoSG, Nat Genet 2020) Clinical Data"),
-        div(class = "scrollable-table", DTOutput("data_dsout4")),
-        h4("Summary of LUAD (OncoSG, Nat Genet 2020) Clinical Data"),
-        div(class = "summary-text-box", verbatimTextOutput("data_summary4"))
-      ),
-      # Image NSCLC
-      conditionalPanel(
-        condition = "input.data_choice == 'image' && input.data_choice_image == 'nsclc_data2'",
-        h1("NSCLC Image Data"),
-        h4("Dimensions: 512x512"),
-        h4("Format: DICOM"),
-        h4("Number of samples: 422"),
-        h4("Number of Images: 52,073"),
-        h4("Modality: CT/RT")
-      )
-    ),
-    
-    # UI Tab 2: PLOTS
-    tabPanel(
-      "PLOTS",
-      fluidRow(
-        column(
-          12,
-          class = "compact-container",
-          div(
-            class = "compact-select",
-            radioButtons(
-              inputId = "plot_data_choice_tabular",
-              label = "Choose Dataset:",
-              choices = list(
-                "LUAD TCGA Pan Can Atlas 2018 Clinical Data" = "luad_data1",
-                "NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2",
-                "LUAD TCGA Firehose Legacy Clinical Data" = "luad_data3",
-                "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4"
-              )
-            )
-          ),
-          
-          # LUAD Tabular 1
-          conditionalPanel(
-            condition = "input.plot_data_choice_tabular == 'luad_data1'",
-            radioButtons(
-              inputId = "plot_choice_tabular1",
-              label = "Choose Plot:",
-              choices = list(
-                "Age" = "age",
-                "Sex" = "sex",
-                "Race" = "race",
-                "Ethnicity" = "ethnicity"
-              )
-            )
-          ),
-          # NSCLC Tabular 2
-          conditionalPanel(
-            condition = "input.plot_data_choice_tabular == 'nsclc_data2'",
-            radioButtons(
-              inputId = "plot_choice_tabular2",
-              label = "Choose Plot:",
-              choices = list("Age" = "age2", "Sex" = "sex2")
-            )
-          ),
-          # LUAD Tabular 3
-          conditionalPanel(
-            condition = "input.plot_data_choice_tabular == 'luad_data3'",
-            radioButtons(
-              inputId = "plot_choice_tabular3",
-              label = "Choose Plot:",
-              choices = list(
-                "Age" = "age3",
-                "Sex" = "sex3",
-                "Race" = "race3",
-                "Ethnicity" = "ethnicity3"
-              )
-            )
-          ),
-          
-          # LUAD Tabular 4
-          conditionalPanel(
-            condition = "input.plot_data_choice_tabular == 'luad_data4'",
-            radioButtons(
-              inputId = "plot_choice_tabular4",
-              label = "Choose Plot:",
-              choices = list(
-                "Age" = "age4",
-                "Sex" = "sex4",
-                "Ethnicity" = "ethnicity4"
-              )
-            )
-          ),
-          
-          plotlyOutput(outputId = "dynamic_plot")
-          
-        ),
-      ),
-      column(12, class = "compact-container", div(class = "compact-select", htmlOutput("total_samples")))
-    ),
-    
-    # UI Tab 3: CORRELATION MATRIX
-    tabPanel("CORRELATION MATRIX", fluidRow(
-      mainPanel(
-        radioButtons(
-          inputId = "cor_matrix_choice",
-          label = "Choose Dataset:",
-          choices = list(
-            "LUAD TCGA Pan Can Atlas 2018 Clinical Data" = "luad_data1",
-            "NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2",
-            "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4"
-          )
-        ),
-        class = "compact-select",
-        plotOutput("corrPlot", width = "1024", height = "1024px")
-      ),
-      
-      
-      
-    )),
-    
-    # UI Tab 4: IMAGES
-    tabPanel("IMAGES", fluidRow(
-      sidebarLayout(
-        sidebarPanel(
-          selectInput("dataset_selector", "Choose Dataset:", choices = names(datasets)),
-          sliderInput("image_slider", "Image Number", min = 1, max = 1, value = 1, step = 1)
-        ),
-        mainPanel(
-          textOutput("image_title"),
-          plotOutput("image_display", width = "512px", height = "512px")
-        )
-      ))
-    ),
-    
-    # UI Tab 5: REPORT
-    tabPanel("REPORT", mainPanel(includeMarkdown("www/Report.md")))
-    
-  )
-)
-```
-
-### 5. Server Function {#server-function}
-
-```{r}
 # Define server function
 server <- function(input, output, session) {
   
@@ -433,6 +29,79 @@ server <- function(input, output, session) {
   # Apply the functions to each data frame and name
   mapply(render_data_table, data_list, output_names)
   mapply(render_data_summary, data_list, summary_names)
+  
+  
+  
+  
+  
+  
+  
+  
+  # Table1 Descriptive Statistics
+  # (general statistics and stratified analysis by a grouping variable)
+  
+  # Reactive expression to get selected dataset
+  selected_data_t1 <- reactive({
+    datasets_clinical[[input$dataset_t1_choice]]
+  })
+  
+  # Dynamic UI for selecting variable based on selected dataset
+  output$variable_select <- renderUI({
+    req(selected_data_t1())
+    
+    # CAN LATER REMOVE UNWANTED VARIABLES:
+    # cat_vars <- setdiff(names(selected_data()), "PatientID")
+    
+    selectInput('cat_var', 'Variable', choices = names(selected_data_t1()))
+  })
+  
+  # Reactive expression to filter data based on selected group
+  filtered_data_t1 <- reactive({
+    data_t1 <- selected_data_t1()
+    
+    # Common columns to use if they exist in the dataset
+    common_columns_t1 <- c("Diagnosis Age", "age", "Age", "sex", "Sex", "Gender", "Race Category", "Neoplasm Disease Stage American Joint Committee on Cancer Code")
+    
+    # Check which common columns are present in the dataset
+    present_common_columns_t1 <- intersect(common_columns_t1, colnames(data_t1))
+    
+    if (!is.null(input$cat_var) && input$cat_var != "" && input$cat_var %in% colnames(data_t1)) {
+      selected_columns_t1 <- c(present_common_columns_t1, input$cat_var)
+      
+      selected_data_t1 <- data_t1 %>%
+        select(any_of(selected_columns_t1)) %>%
+        drop_na()
+      
+      return(selected_data_t1)
+    } else {
+      return(data_t1 %>% select(any_of(present_common_columns_t1)) %>% drop_na())
+    }
+  })
+  
+  # Render the table
+  output$T1 <- renderTable({
+    data_t1 <- filtered_data_t1()
+    
+    # Generate descriptive statistics table with stratification
+    if (!is.null(input$cat_var) && input$cat_var != "" && input$cat_var %in% colnames(data_t1)) {
+      stratified_var <- input$cat_var
+      table1(~ . | data_t1[[stratified_var]], data = data_t1, render.continuous=c(.="Mean (SD)"))
+    } else {
+      table1(~ ., data = data_t1, render.continuous=c(.="Mean (SD)"))
+    }
+  })
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   
   
@@ -650,6 +319,7 @@ server <- function(input, output, session) {
     plot
   })
   
+  
   total_samples <- reactive({
     dataset_choice <- switch(
       input$plot_data_choice_tabular,
@@ -723,6 +393,7 @@ server <- function(input, output, session) {
   })
   
   # SERVER Tab 4: IMAGES
+  
   # Initialize reactiveVal to hold images
   images <- reactiveVal(NULL)
   
@@ -749,12 +420,3 @@ server <- function(input, output, session) {
     text_content
   })
 }
-
-
-
-
-# Create Shiny object
-shinyApp(ui = ui, server = server)
-
-
-```
