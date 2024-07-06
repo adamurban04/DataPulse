@@ -9,6 +9,6 @@ You can view this tool at: https://adamurban.shinyapps.io/Research/
 And read more about the project at: [https://adamurban04.github.io/portfolio/jekyll/update/2024/05/19/upstart-summer-scholarship.html](https://adamurban04.github.io/portfolio/jekyll/update/2024/05/19/upstart-summer-scholarship.html)
 
 Info:
-1. There are more R files. The whole code for the app is however in the app.R file.  
+- There are more R files. The whole code for the app is however in the app.R file.  
 I split the whole code into multiple files for simplicity and workflow, however shinyapps.io only accepts apps in one file.  
-2. The www folder here on GitHub does not contain all the image files yet.
+- The www folder here on GitHub does not contain all the image files yet.
