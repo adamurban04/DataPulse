@@ -1,5 +1,5 @@
 # UPSTaRT
-A repository for collaboration on UPSTaRT research project I am working on.
+A repository for collaboration on UPSTaRT research project I am working on together with my classmate James Conolly.
 
 Open-source contributions:
 
