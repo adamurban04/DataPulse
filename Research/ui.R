@@ -87,7 +87,7 @@ ui <- fluidPage(
     "UPSTaRT",
     # UI Tab 1: DATA
     tabPanel(
-      "DATA",
+      "DATA OVERVIEW",
       fluidRow(
         column(
           12,
@@ -105,7 +105,7 @@ ui <- fluidPage(
             condition = "input.data_choice == 'tabular'",
             radioButtons(
               inputId = "data_choice_tabular",
-              label = "Choose Dataset:",
+              label = "Choose Dataset to view:",
               choices = list(
                 "LUAD TCGA Pan Can Atlas 2018 Clinical Data" = "luad_data1",
                 "NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2",
@@ -132,33 +132,17 @@ ui <- fluidPage(
         div(class = "scrollable-table", DTOutput("data_dsout1")),
         div(class = "space-before-panel"),
         
-        h3("Summary in R"),
-        div(class = "summary-text-box", verbatimTextOutput("data_summary1")),
-        div(class = "space-before-panel"),
-        
-        
-        h3("Descriptive Statistics using table1 Package"),
-        dashboardSidebar(
-          selectInput('dataset_t1_choice', 'Select Dataset', choices = names(datasets_clinical)),
-          uiOutput("variable_select") # Dynamic variable selection based on chosen dataset
-        ),
-        dashboardBody(
-          box(
-            status = "primary",
-            solidHeader = TRUE,
-            width = 12,
-            div(class = "container-box",
-                div(class = "table1-output", tableOutput("T1"))
-            )
-          )
-        )
+        h3("Summary in R", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+        div(class = "summary-text-box", verbatimTextOutput("data_summary1"))
       ),
       # Tabular NSCLC 2
       conditionalPanel(
         condition = "input.data_choice == 'tabular' && input.data_choice_tabular == 'nsclc_data2'",
         h1("NSCLC-Radiomics Lung1 Clinical Data"),
         div(class = "scrollable-table", DTOutput("data_dsout2")),
-        h4("Summary of NSCLC-Radiomics Lung1 Clinical Data"),
+        div(class = "space-before-panel"),
+        
+        h3("Summary in R", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
         div(class = "summary-text-box", verbatimTextOutput("data_summary2"))
       ),
       # Tabular LUAD 3
@@ -166,7 +150,9 @@ ui <- fluidPage(
         condition = "input.data_choice == 'tabular' && input.data_choice_tabular == 'luad_data3'",
         h1("LUAD TCGA Firehose Legacy Clinical Data"),
         div(class = "scrollable-table", DTOutput("data_dsout3")),
-        h4("Summary of LUAD TCGA Firehose Legacy Clinical Data"),
+        div(class = "space-before-panel"),
+        
+        h3("Summary in R", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
         div(class = "summary-text-box", verbatimTextOutput("data_summary3"))
       ),
       # Tabular LUAD 4
@@ -174,7 +160,9 @@ ui <- fluidPage(
         condition = "input.data_choice == 'tabular' && input.data_choice_tabular == 'luad_data4'",
         h1("LUAD (OncoSG, Nat Genet 2020) Clinical Data"),
         div(class = "scrollable-table", DTOutput("data_dsout4")),
-        h4("Summary of LUAD (OncoSG, Nat Genet 2020) Clinical Data"),
+        div(class = "space-before-panel"),
+        
+        h3("Summary in R", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
         div(class = "summary-text-box", verbatimTextOutput("data_summary4"))
       ),
       # Image NSCLC
@@ -186,13 +174,33 @@ ui <- fluidPage(
         h4("Number of samples: 422"),
         h4("Number of Images: 52,073"),
         h4("Modality: CT/RT")
+      ),
+      
+    ),
+    
+    # UI Tab 2: STRATIFIED ANALYSIS
+    
+    tabPanel(
+      "STRATIFIED ANALYSIS",
+        fluidRow(
+
+      h3("Descriptive Statistics using table1 Package", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+      selectInput('dataset_t1_choice', 'Select Dataset', choices = names(datasets_clinical)),
+      uiOutput("variable_select"), # Dynamic variable selection based on chosen dataset
+      
+      div(style = "border-color: #555555; border-width: 2px; border-style: solid; padding: 15px;",
+          h3(""),
+          div(class = "table1-output", tableOutput("T1"))
+      )
       )
     ),
     
-    # UI Tab 2: PLOTS
+    
+    # UI Tab 3: PLOTS
     tabPanel(
       "PLOTS",
       fluidRow(
+        h3("Data Visualisation using plotly Package", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
         column(
           12,
           class = "compact-container",
@@ -269,8 +277,9 @@ ui <- fluidPage(
       column(12, class = "compact-container", div(class = "compact-select", htmlOutput("total_samples")))
     ),
     
-    # UI Tab 3: CORRELATION MATRIX
+    # UI Tab 4: CORRELATION MATRIX
     tabPanel("CORRELATION MATRIX", fluidRow(
+      h3("Correlation Matrix using corrPlot package", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
       mainPanel(
         radioButtons(
           inputId = "cor_matrix_choice",
@@ -289,7 +298,7 @@ ui <- fluidPage(
       
     )),
     
-    # UI Tab 4: IMAGES
+    # UI Tab 5: IMAGES
     tabPanel("IMAGES", fluidRow(
       sidebarLayout(
         sidebarPanel(
@@ -303,7 +312,7 @@ ui <- fluidPage(
       ))
     ),
     
-    # UI Tab 5: REPORT
+    # UI Tab 6: REPORT
     tabPanel("REPORT", mainPanel(includeMarkdown("www/Report.md")))
     
   )

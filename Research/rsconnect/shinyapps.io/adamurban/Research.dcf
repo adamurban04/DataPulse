@@ -4,9 +4,10 @@ username: adamurban
 account: adamurban
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
-appId: 12126019
-bundleId: 8813482
+appId: 12282109
+bundleId: 8831576
 url: https://adamurban.shinyapps.io/Research/
 version: 1
 asMultiple: FALSE
 asStatic: FALSE
+ignoredFiles: App_Notebook.nb.html|App_Notebook.Rmd|appSplit.R|data_loading.R|global.R|helper_functions.R|RNAseq.nb.html|RNAseq.Rmd|server.R|ui.R

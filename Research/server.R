@@ -33,9 +33,7 @@ server <- function(input, output, session) {
   
   
   
-  
-  
-  
+  # SERVER Tab 2: DATA OVERVIEW
   
   # Table1 Descriptive Statistics
   # (general statistics and stratified analysis by a grouping variable)
@@ -92,20 +90,9 @@ server <- function(input, output, session) {
   })
   
   
+
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  # SERVER Tab 2: PLOTS
+  # SERVER Tab 3: PLOTS
   
   # Reactive expression to filter data based on plot choice
   filtered_data <- reactive({
@@ -339,7 +326,7 @@ server <- function(input, output, session) {
     )
   })
   
-  # SERVER Tab 3: CORRELATION MATRIX
+  # SERVER Tab 4: CORRELATION MATRIX
   
   # Diagnosis Age: Has a negative correlation with variables such as Overall Survival (Months) and Progress Free Survival (Months), indicating that older patients may have poorer outcomes
   
@@ -392,7 +379,7 @@ server <- function(input, output, session) {
     }
   })
   
-  # SERVER Tab 4: IMAGES
+  # SERVER Tab 5: IMAGES
   
   # Initialize reactiveVal to hold images
   images <- reactiveVal(NULL)
@@ -413,7 +400,7 @@ server <- function(input, output, session) {
     list(src = images()[input$image_slider], contentType = "image/png")
   }, deleteFile = FALSE)
   
-  # SERVER Tab 5: REPORT
+  # SERVER Tab 6: REPORT
   
   # Output for the report text file
   output$research_report <- renderText({
