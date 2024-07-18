@@ -293,7 +293,7 @@ ui <- fluidPage(
         selectInput('dataset_t1_choice', 'Select Dataset', choices = names(datasets_clinical)),
         uiOutput("variable_select"), # Dynamic variable selection based on chosen dataset
         
-        div(style = "border-color: #555555; border-width: 2px; border-style: solid; padding: 15px;",
+        div(style = "border-color: #C0C0C0; border-width: 1px; border-style: solid; padding: 15px;",
             h3(""),
             div(class = "table1-output", tableOutput("T1"))
         )
