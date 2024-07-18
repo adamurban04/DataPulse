@@ -16,6 +16,8 @@ library(tidyr)
 
 # Read the TSV/CSV file for Datasets
 
+# https://www.cancerrxgene.org/downloads/drug_data?pathway=All&tissue=LUAD
+drug_data <- read_csv("www/LUAD_IC_Sun_Jul_14_11_36_44_2024.csv")
 # https://www.cbioportal.org/study/clinicalData?id=luad_tcga_pan_can_atlas_2018
 luad_data1 <- read_tsv("www/luad_tcga_pan_can_atlas_2018_clinical_data.tsv")
 # https://www.cancerimagingarchive.net/collection/nsclc-radiomics/
@@ -290,7 +292,7 @@ ui <- fluidPage(
     ),
     
     
-    # UI Tab 2: PLOTS
+    # UI Tab 3: PLOTS
     tabPanel(
       "PLOTS",
       fluidRow(
@@ -371,29 +373,48 @@ ui <- fluidPage(
       column(12, class = "compact-container", div(class = "compact-select", htmlOutput("total_samples")))
     ),
     
-    # UI Tab 3: CORRELATION MATRIX
+    # UI Tab 4: CORRELATION MATRIX
     tabPanel("CORRELATION MATRIX", fluidRow(
       h3("Correlation Matrix using corrPlot package", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
-      mainPanel(
-        radioButtons(
+      column(
+        12,
+        class = "compact-container",
+        div(
+          class = "compact-select",
+          radioButtons(
           inputId = "cor_matrix_choice",
           label = "Choose Dataset:",
           choices = list(
             "LUAD TCGA Pan Can Atlas 2018 Clinical Data" = "luad_data1",
             "NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2",
             "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4"
-          )
+          ))
         ),
         class = "compact-select",
-        plotOutput("corrPlot", width = "1024", height = "1024px")
+        plotOutput("corrPlot", width = "800px", height = "800px")
       ),
-      
-      
-      
     )),
     
-    # UI Tab 4: IMAGES
+    # UI Tab 5: DRUG SENSITIVITY
+    tabPanel("DRUG SENSITIVITY", fluidRow(
+      h3("Drug Sensitivity T-test Analysis", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+      # Drug Sensitivity T-test Analysis
+      sidebarLayout(
+        sidebarPanel(
+          selectInput("group_var", "Select Grouping Variable:", choices = c("Drug Name", "Cell Line Name", "Tissue Sub-type", "Dataset Version")),
+          uiOutput("level1_ui"),
+          uiOutput("level2_ui"),
+          actionButton("run_test", "Run T-test")
+        ),
+        mainPanel(
+          verbatimTextOutput("t_test_result")
+        )
+      ))
+    ),
+    
+    # UI Tab 6: IMAGES
     tabPanel("IMAGES", fluidRow(
+      h3("DICOM Viewer", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
       sidebarLayout(
         sidebarPanel(
           selectInput("dataset_selector", "Choose Dataset:", choices = names(datasets)),
@@ -406,8 +427,10 @@ ui <- fluidPage(
       ))
     ),
     
-    # UI Tab 5: REPORT
-    tabPanel("REPORT", mainPanel(includeMarkdown("www/Report.md")))
+    # UI Tab 7: REPORT
+    tabPanel("REPORT", 
+             h3("Research Report", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+             mainPanel(includeMarkdown("www/Report.md")))
     
   )
 )
@@ -415,7 +438,7 @@ ui <- fluidPage(
 # Define server function
 server <- function(input, output, session) {
   
-  # SERVER Tab 1: DATA
+  # SERVER Tab 1: DATA OVERVIEW
   
   # List of data frames
   data_list <- list(luad_data1, nsclc_data2, luad_data3, luad_data4)
@@ -448,8 +471,7 @@ server <- function(input, output, session) {
   
   
   
-  
-  
+  # SERVER Tab 2: STRATIFIED ANALYSIS
   
   # Table1 Descriptive Statistics
   # (general statistics and stratified analysis by a grouping variable)
@@ -506,20 +528,7 @@ server <- function(input, output, session) {
   })
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  # SERVER Tab 2: PLOTS
+  # SERVER Tab 3: PLOTS
   
   # Reactive expression to filter data based on plot choice
   filtered_data <- reactive({
@@ -753,12 +762,11 @@ server <- function(input, output, session) {
     )
   })
   
-  # SERVER Tab 3: CORRELATION MATRIX
+  # SERVER Tab 4: CORRELATION MATRIX
   
-  # Diagnosis Age: Has a negative correlation with variables such as Overall Survival (Months) and Progress Free Survival (Months), indicating that older patients may have poorer outcomes
+  # (Diagnosis Age: Has a negative correlation with variables such as Overall Survival (Months) and Progress Free Survival (Months), indicating that older patients may have poorer outcomes
   
   # Select numeric columns for correlation analysis
-  
   
   numeric_data <- reactive({
     selected_data <- switch(
@@ -781,7 +789,7 @@ server <- function(input, output, session) {
     switch(
       input$cor_matrix_choice,
       "luad_data1" = numeric_data()[, c("Diagnosis Age", "Mutation Count", "Overall Survival (Months)")],
-      "nsclc_data2" = numeric_data()[, c("age", "Survival.time")],
+      "nsclc_data2" = numeric_data()[, c("age", "Survival.time", "deadstatus.event")],
       "luad_data4" = numeric_data()[, c("Age", "Mutation Count", "Overall survival months", "Person Cigarette Smoking History Pack Year Value")]
     )
   })
@@ -795,8 +803,9 @@ server <- function(input, output, session) {
       # Set the margins for the plot
       par(mar = c(2, 2, 1, 1))
       # Plot the correlation matrix
-      corrplot(cor_matrix, method = "color", tl.cex = 1.4, 
-               title = "Correlation Matrix", mar = c(0, 0, 1, 0),
+      corrplot(cor_matrix, method = "color", tl.cex = 1.4,
+               diag = FALSE,
+               type = "upper",
                col = colorRampPalette(c("blue", "white", "red"))(100),
                number.cex = 0.7, tl.col = "black")
     } else {
@@ -806,7 +815,42 @@ server <- function(input, output, session) {
     }
   })
   
-  # SERVER Tab 4: IMAGES
+  
+  
+  # SERVER Tab 5: DRUG SENSITIVITY
+  
+  # Generate UI for selecting the first level
+  output$level1_ui <- renderUI({
+    req(input$group_var)
+    levels <- unique(drug_data[[input$group_var]])
+    selectInput("level1", "Select First Level:", choices = levels)
+  })
+  
+  # Generate UI for selecting the second level based on the first level
+  output$level2_ui <- renderUI({
+    req(input$group_var, input$level1)
+    levels <- setdiff(unique(drug_data[[input$group_var]]), input$level1)
+    selectInput("level2", "Select Second Level:", choices = levels)
+  })
+  
+  observeEvent(input$run_test, {
+    req(input$group_var, input$level1, input$level2)
+    # Filter the data based on the selected levels
+    filtered_data <- drug_data %>% 
+      filter(get(input$group_var) %in% c(input$level1, input$level2))
+    
+    # Perform the t-test based on the selected grouping variable
+    t_test_result <- t.test(IC50 ~ get(input$group_var), data = filtered_data)
+    
+    # Display the t-test result
+    output$t_test_result <- renderPrint({
+      t_test_result
+    })
+  })
+  
+  
+  
+  # SERVER Tab 6: IMAGES
   
   # Initialize reactiveVal to hold images
   images <- reactiveVal(NULL)
@@ -827,12 +871,17 @@ server <- function(input, output, session) {
     list(src = images()[input$image_slider], contentType = "image/png")
   }, deleteFile = FALSE)
   
-  # SERVER Tab 5: REPORT
+  
+  
+  # SERVER Tab 7: REPORT
   
   # Output for the report text file
   output$research_report <- renderText({
     text_content
   })
 }
+
+
+
 
 shinyApp(ui = ui, server = server)
