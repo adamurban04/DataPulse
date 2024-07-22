@@ -4,9 +4,9 @@ A repository for collaboration on UPSTaRT research project I am working on toget
 Open-source contributions:
 
 1. *A tool for identifying data bias*  
-You can view this tool at: https://adamurban.shinyapps.io/Research/
+You can view this tool at: [adamurban.shinyapps.io/Research](https://adamurban.shinyapps.io/Research/)
 
-And read more about the project at: [https://adamurban04.github.io/portfolio/jekyll/update/2024/05/19/upstart-summer-scholarship.html](https://adamurban04.github.io/portfolio/jekyll/update/2024/05/19/upstart-summer-scholarship.html)
+And read more about the project at: [adamurban04.github.io/portfolio/research/upstart-summer-research]([https://adamurban04.github.io/portfolio/research/upstart-summer-scholarship/](https://adamurban04.github.io/portfolio/research/upstart-summer-research/))
 
 Info:
 - There are more R files. The whole code for the app is however in the app.R file.  
