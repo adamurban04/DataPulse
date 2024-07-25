@@ -13,6 +13,9 @@ library(plotly) # Interactive Plots
 library(corrplot) # Correlation Matrix
 library(table1) # Descriptive Tables
 library(tidyr)
+library(RadioGx)
+library(PharmacoGx)
+
 
 # Read the TSV/CSV file for Datasets
 
@@ -215,7 +218,9 @@ ui <- fluidPage(
                 "LUAD TCGA Pan Can Atlas 2018 Clinical Data" = "luad_data1",
                 "NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2",
                 "LUAD TCGA Firehose Legacy Clinical Data" = "luad_data3",
-                "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4"
+                "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4",
+                "GDSC1" = "drug_data",
+                "GDSC2" = "drug_data2"
               )
             )
           ),
@@ -269,6 +274,26 @@ ui <- fluidPage(
         
         h3("Summary in R", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
         div(class = "summary-text-box", verbatimTextOutput("data_summary4"))
+      ),
+      # Tabular DRUG 5
+      conditionalPanel(
+        condition = "input.data_choice == 'tabular' && input.data_choice_tabular == 'drug_data'",
+        h1("GDSC1 Drug Data"),
+        div(class = "scrollable-table", DTOutput("data_dsout5")),
+        div(class = "space-before-panel"),
+        
+        h3("Summary in R", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+        div(class = "summary-text-box", verbatimTextOutput("data_summary5"))
+      ),
+      # Tabular DRUG 6
+      conditionalPanel(
+        condition = "input.data_choice == 'tabular' && input.data_choice_tabular == 'drug_data2'",
+        h1("GDSC2 Drug Data"),
+        div(class = "scrollable-table", DTOutput("data_dsout6")),
+        div(class = "space-before-panel"),
+        
+        h3("Summary in R", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+        div(class = "summary-text-box", verbatimTextOutput("data_summary6"))
       ),
       # Image NSCLC
       conditionalPanel(
@@ -423,7 +448,7 @@ ui <- fluidPage(
     ),
     
     # UI Tab 6: RADIOGENOMIC ANALYSIS
-    tabPanel("RADIOGENOMIC ANALYSIS", fluidRow(
+    tabPanel("RADIOGX ANALYSIS", fluidRow(
       h3("Radiogenomic Analysis with RadioGx", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
       sidebarLayout(
         sidebarPanel(
@@ -436,14 +461,15 @@ ui <- fluidPage(
                         "Survival Fraction After 2 Units" = "survFracAfter2Units",
                         "Dose for 10% Survival" = "dose10PercentSurv",
                         "Area Under Dose-Response Curve" = "areaUnderDoseRespCurve",
-                        "Dose-Response Curve" = "doseResponseCurve"
+                        "Dose-Response Curve" = "doseResponseCurve",
+                        "Radiation Sensitivity Signatures" = "radiationSensitivitySignatures"
                       )
           ),
           uiOutput("cell_line_ui")
         ),
         mainPanel(
           lapply(c("data", "molecularFeatureData", "sensitivity", "LQ_model", "survFracAfter2Units", 
-                   "dose10PercentSurv", "areaUnderDoseRespCurve", "doseResponseCurve"), function(choice) {
+                   "dose10PercentSurv", "areaUnderDoseRespCurve", "doseResponseCurve", "radiationSensitivitySignatures"), function(choice) {
                      conditionalPanel(
                        condition = paste0("input.output_choice == '", choice, "'"),
                        if (choice == "doseResponseCurve") {
@@ -453,6 +479,36 @@ ui <- fluidPage(
                        }
                      )
                    })
+        )
+      )
+    )),
+    
+    # New Tab for PharmacoGx Analysis
+    tabPanel("PHARMACOGX ANALYSIS", fluidRow(
+      h3("Pharmacogenomic Analysis with PharmacoGx", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+      sidebarLayout(
+        sidebarPanel(
+          selectInput("pharmaco_output_choice", "Select Output to Display:", 
+                      choices = list(
+                        "Show Pharmacogenomic Data" = "pharmacoData",
+                        "Drug Dose Response Curve" = "doseResponseCurve",
+                        "Sensitivity Signatures" = "sensitivitySignatures"
+                      )
+          ),
+          uiOutput("pharmaco_cell_line_ui"),
+          uiOutput("pharmaco_drug_ui")
+        ),
+        mainPanel(
+          lapply(c("pharmacoData", "doseResponseCurve", "sensitivitySignatures"), function(choice) {
+            conditionalPanel(
+              condition = paste0("input.pharmaco_output_choice == '", choice, "'"),
+              if (choice == "doseResponseCurve") {
+                plotOutput(paste0("pharmacoGx_", choice))
+              } else {
+                verbatimTextOutput(paste0("pharmacoGx_", choice))
+              }
+            )
+          })
         )
       )
     )),
@@ -486,11 +542,11 @@ server <- function(input, output, session) {
   # SERVER Tab 1: DATA OVERVIEW
   
   # List of data frames
-  data_list <- list(luad_data1, nsclc_data2, luad_data3, luad_data4)
+  data_list <- list(luad_data1, nsclc_data2, luad_data3, luad_data4, drug_data, drug_data2)
   
   # Names for the outputs
-  output_names <- c("data_dsout1", "data_dsout2", "data_dsout3", "data_dsout4")
-  summary_names <- c("data_summary1", "data_summary2", "data_summary3", "data_summary4")
+  output_names <- c("data_dsout1", "data_dsout2", "data_dsout3", "data_dsout4", "data_dsout5", "data_dsout6")
+  summary_names <- c("data_summary1", "data_summary2", "data_summary3", "data_summary4", "data_summary5", "data_summary6")
   
   # Function to create DataTable
   render_data_table <- function(data, name) {
@@ -900,7 +956,7 @@ server <- function(input, output, session) {
   # SERVER Tab 6: RADIOGENOMIC ANALYSIS  
   
   # Load or define dataset
-  data(clevelandSmall)
+  data("clevelandSmall")
   
   # UI for selecting cell line
   output$cell_line_ui <- renderUI({
@@ -918,11 +974,41 @@ server <- function(input, output, session) {
     radiationDoses <- selected_sensRaw[, 'Dose']
     survivalFractions <- selected_sensRaw[, 'Viability']
     LQmodel <- linearQuadraticModel(D = radiationDoses, SF = survivalFractions)
+    
     list(
       LQmodel = LQmodel,
       survFracAfter2Units = computeSF2(pars = LQmodel),
       dose10PercentSurv = computeD10(pars = LQmodel),
       areaUnderDoseRespCurve = RadioGx::computeAUC(D = radiationDoses, pars = LQmodel, lower = 0, upper = 1)
+    )
+  })
+  
+  # Render analysis results
+  output$analysis_results <- renderPrint({
+    if (input$output_choice %in% c("LQ_model", "survFracAfter2Units", "dose10PercentSurv", "areaUnderDoseRespCurve", "doseResponseCurve", "radiationSensitivitySignatures")) {
+      metrics <- computeMetrics()
+      req(metrics)
+      if (input$output_choice == "LQ_model") {
+        print(metrics$LQmodel)
+      } else if (input$output_choice == "survFracAfter2Units") {
+        print(metrics$survFracAfter2Units)
+      } else if (input$output_choice == "dose10PercentSurv") {
+        print(metrics$dose10PercentSurv)
+      } else if (input$output_choice == "areaUnderDoseRespCurve") {
+        print(metrics$areaUnderDoseRespCurve)
+      } else if (input$output_choice == "radiationSensitivitySignatures") {
+        print(metrics$radSensSig@.Data)
+      }
+    }
+  })
+  
+  # Render dose response plot
+  output$radioGx_doseResponseCurve <- renderPlot({
+    req(input$cell_line)
+    # Dose-Response Curve
+    doseResponseCurve(
+      rSets = list(clevelandSmall),
+      cellline = input$cell_line
     )
   })
   
@@ -932,9 +1018,10 @@ server <- function(input, output, session) {
   })
   
   output$radioGx_molecularFeatureData <- renderPrint({
+    cat("Shows first 10 rows of molecular feature data.\n\n")
     # Access the molecular feature data
     mProf <- molecularProfiles(clevelandSmall, 'rnaseq')
-    selected_rows <- mProf[1:5, ]  # Select the first 5 rows
+    selected_rows <- mProf[1:10, ]  # Select the first 10 rows
     knitr::kable(selected_rows)
   })
   
@@ -971,13 +1058,91 @@ server <- function(input, output, session) {
     print(metrics$areaUnderDoseRespCurve)
   })
   
-  output$radioGx_doseResponseCurve <- renderPlot({
-    req(input$cell_line)
-    # Dose-Response Curve
-    doseResponseCurve(
-      rSets = list(clevelandSmall),
-      cellline = input$cell_line
+  output$radioGx_radiationSensitivitySignatures <- renderPrint({
+    radSensSig <- radSensitivitySig(clevelandSmall, mDataType='rna', features=fNames(clevelandSmall, 'rna')[1:10], nthread=1)
+    cat("Radiation sensitivity signatures (first 10 rows selected).\n\n
+    
+        Estimate: Positive values indicate that higher expression of the gene is associated with increased radio-sensitivity,\n
+        while negative values indicate association with radio-resistance.\n\n
+        
+        Low p-values (typically < 0.05) and FDR values suggest that the association is statistically significant\n\n.
+        
+        T-Statistic and F-Statistic: Higher values indicate stronger evidence against the null hypothesis,\n
+        implying a significant relationship between gene expression and radiation sensitivity.\n\n
+        ")
+    radSensSig@.Data
+  })
+  
+  # SERVER Tab 7: PHARMACOGX ANALYSIS 
+  
+  # Load or define dataset
+  data("CCLEsmall")
+  
+  # UI for selecting cell line
+  output$pharmaco_cell_line_ui <- renderUI({
+    if (input$pharmaco_output_choice %in% c("doseResponseCurve")) {
+      selectInput("pharmaco_cell_line", "Select Cell Line:", choices = cellInfo(CCLEsmall)$sampleid)
+    }
+  })
+  
+  # UI for selecting drug
+  output$pharmaco_drug_ui <- renderUI({
+    if (input$pharmaco_output_choice %in% c("doseResponseCurve", "sensitivitySignatures")) {
+      selectInput("pharmaco_drug", "Select Drug:", choices = drugInfo(CCLEsmall)$treatmentid)
+    }
+  })
+  
+  # Show a warning message when the "Drug Dose Response Curve" is selected
+  observeEvent(input$pharmaco_output_choice, {
+    if (input$pharmaco_output_choice == "doseResponseCurve") {
+      showModal(modalDialog(
+        title = "Warning",
+        "Please note that many drug-cell line combinations have not been tested. You may encounter cases where the selected combination was not tested.",
+        easyClose = TRUE,
+        footer = NULL
+      ))
+    }
+  })
+  
+  # Function to compute drug sensitivity based on the selected drug
+  computeDrugSensitivity <- reactive({
+    req(input$pharmaco_drug)
+    drug_response <- summarizeSensitivityProfiles(pSet = CCLEsmall, sensitivity.measure = "auc_published", summary.stat = "median")
+    selected_drug_response <- drug_response[input$pharmaco_drug, ]
+    selected_drug_response
+  })
+  
+  # Render pharmacogenomic data
+  output$pharmacoGx_pharmacoData <- renderPrint({
+    cat("Pharmacogenomic dataset containing metadata/annotations, molecular data and drug response data.\n\n")
+    CCLEsmall
+  })
+  
+  # Render drug dose response curve
+  output$pharmacoGx_doseResponseCurve <- renderPlot({
+    req(input$pharmaco_cell_line, input$pharmaco_drug)
+    drugDoseResponseCurve(
+      pSet = CCLEsmall,
+      drug = input$pharmaco_drug,
+      cell = input$pharmaco_cell_line
     )
+  })
+  
+  # Render sensitivity signatures
+  output$pharmacoGx_sensitivitySignatures <- renderPrint({
+    req(input$pharmaco_cell_line, input$pharmaco_drug)
+    sensSig <- drugSensitivitySig(CCLEsmall, mDataType='rna', drug = input$pharmaco_drug, cellline = input$pharmaco_cell_line, features=fNames(CCLEsmall, 'rna')[1:10], nthread=1)
+    cat("Drug sensitivity signatures (first 10 rows selected).\n\n
+    
+        Estimate: Positive values indicate that higher expression of the gene is associated with increased drug sensitivity,\n
+        while negative values indicate association with drug resistance.\n\n
+        
+        Low p-values (typically < 0.05) and FDR values suggest that the association is statistically significant\n\n.
+        
+        T-Statistic and F-Statistic: Higher values indicate stronger evidence against the null hypothesis,\n
+        implying a significant relationship between gene expression and drug sensitivity.\n\n
+        ")
+    sensSig@.Data
   })
   
   
