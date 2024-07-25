@@ -197,6 +197,7 @@ ui <- fluidPage(
     tabPanel(
       "DATA OVERVIEW",
       fluidRow(
+        h3("Data Overview", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
         column(
           12,
           class = "compact-container",
@@ -211,13 +212,13 @@ ui <- fluidPage(
           # Tabular
           conditionalPanel(
             condition = "input.data_choice == 'tabular'",
-            radioButtons(
+            selectInput(
               inputId = "data_choice_tabular",
               label = "Choose Dataset to view:",
               choices = list(
-                "LUAD TCGA Pan Can Atlas 2018 Clinical Data" = "luad_data1",
-                "NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2",
-                "LUAD TCGA Firehose Legacy Clinical Data" = "luad_data3",
+                "LUAD TCGA Pan Can Atlas 2018" = "luad_data1",
+                "NSCLC-Radiomics Lung1" = "nsclc_data2",
+                "LUAD TCGA Firehose Legacy" = "luad_data3",
                 "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4",
                 "GDSC1" = "drug_data",
                 "GDSC2" = "drug_data2"
@@ -227,10 +228,10 @@ ui <- fluidPage(
           # Image
           conditionalPanel(
             condition = "input.data_choice == 'image'",
-            radioButtons(
+            selectInput(
               inputId = "data_choice_image",
               label = "Choose Dataset:",
-              choices = list("NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2")
+              choices = list("NSCLC-Radiomics Lung1" = "nsclc_data2")
             )
           )
         )
@@ -298,14 +299,16 @@ ui <- fluidPage(
       # Image NSCLC
       conditionalPanel(
         condition = "input.data_choice == 'image' && input.data_choice_image == 'nsclc_data2'",
-        h1("NSCLC Image Data"),
-        h4("Dimensions: 512x512"),
-        h4("Format: DICOM"),
-        h4("Number of samples: 422"),
-        h4("Number of Images: 52,073"),
-        h4("Modality: CT/RT")
-      ),
-      
+        div(
+          style = "border: 2px solid #606060; border-radius: 5px; padding: 15px; background-color: #f9f9f9; box-shadow: 0 4px 8px rgba(0,0,0,0.1);",
+          h3("NSCLC Image Data", style = "color: #4f4f4f;"),
+          h4("Dimensions: 512x512"),
+          h4("Format: DICOM"),
+          h4("Number of samples: 422"),
+          h4("Number of Images: 52,073"),
+          h4("Modality: CT/RT")
+        )
+      )
     ),
     
     # UI Tab 2: STRATIFIED ANALYSIS
@@ -586,10 +589,12 @@ server <- function(input, output, session) {
   output$variable_select <- renderUI({
     req(selected_data_t1())
     
-    # CAN LATER REMOVE UNWANTED VARIABLES:
-    # cat_vars <- setdiff(names(selected_data()), "PatientID")
+    # Get column names from the selected dataset
+    column_names <- names(selected_data_t1())
     
-    selectInput('cat_var', 'Variable', choices = names(selected_data_t1()))
+    # Filter out 'PatientID' and 'Patient ID' from the list of variables
+    cat_vars <- setdiff(column_names, c("PatientID", "Patient ID", "Sample ID"))
+    selectInput('cat_var', 'Variable', choices = cat_vars)
   })
   
   # Reactive expression to filter data based on selected group
@@ -953,7 +958,7 @@ server <- function(input, output, session) {
   })
   
   
-  # SERVER Tab 6: RADIOGENOMIC ANALYSIS  
+  # SERVER Tab 6: RADIOGX ANALYSIS  
   
   # Load or define dataset
   data("clevelandSmall")
@@ -1147,7 +1152,7 @@ server <- function(input, output, session) {
   
   
   
-  # SERVER Tab 7: IMAGES
+  # SERVER Tab 8: IMAGES
   
   # Initialize reactiveVal to hold images
   images <- reactiveVal(NULL)
@@ -1170,7 +1175,7 @@ server <- function(input, output, session) {
   
   
   
-  # SERVER Tab 8: REPORT
+  # SERVER Tab 9: REPORT
   
   # Output for the report text file
   output$research_report <- renderText({
