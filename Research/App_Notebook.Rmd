@@ -30,12 +30,27 @@ library(markdown)
 library(jpeg)  # JPG images
 library(plotly) # Interactive Plots
 library(corrplot) # Correlation Matrix
+library(table1) # Descriptive Tables
+library(tidyr)
+library(RadioGx)
+library(PharmacoGx)
 ```
 
 ### 2. Datasets {#datasets}
 
 ```{r}
 # Read the TSV/CSV file for Datasets
+
+# https://www.cancerrxgene.org/downloads/drug_data?pathway=All&tissue=LUAD
+drug_data <- read_csv("www/LUAD_IC_Sun_Jul_14_11_36_44_2024.csv")
+# https://www.cancerrxgene.org/downloads/drug_data?screening_set=GDSC1&tissue=LUAD
+drug_data2 <- read_csv("www/LUAD_IC_Thu_Jul_18_13_08_48_2024.csv")
+
+# List of drug datasets
+datasets_drug <- list(
+  "GDSC1" = "drug_data",
+  "GDSC2" = "drug_data2"
+)
 
 # https://www.cbioportal.org/study/clinicalData?id=luad_tcga_pan_can_atlas_2018
 luad_data1 <- read_tsv("www/luad_tcga_pan_can_atlas_2018_clinical_data.tsv")
@@ -45,6 +60,8 @@ nsclc_data2 <- read.csv("www/manifest1603198545583/NSCLC-Radiomics-Lung1.clinica
 luad_data3 <- read_tsv("www/luad_tcga_firehose_legacy_clinical_data.tsv")
 # https://www.cbioportal.org/study/clinicalData?id=luad_oncosg_2020
 luad_data4 <- read_tsv("www/luad_oncosg_2020_clinical_data.tsv")
+
+datasets_clinical <- list("LUAD TCGA" = luad_data1, "NSCLC Radiomics" = nsclc_data2, "LUAD TCGA Firehose" = luad_data3, "LUAD OncoSG" = luad_data4)
 
 # Datasets of images
 datasets <- list(
@@ -119,8 +136,6 @@ scan_dicom_files <- function(directory_path) {
 ### 4. UI {#ui}
 
 ```{r}
-# Define UI
-# Define UI
 ui <- fluidPage(
   theme = shinytheme("yeti"),
   
@@ -139,12 +154,12 @@ ui <- fluidPage(
                           }
                           .summary-text-box {
                             width: 100%;
-                            height: 500px;
+                            height: 350px;
                             overflow-y: scroll;
                             white-space: pre-wrap;
                             word-wrap: break-word;
                             border: 1px solid #ccc;
-                            padding: 10px;
+                            padding: 20px;
                             background-color: #f9f9f9;
                           }
                           .compact-container {
@@ -187,7 +202,20 @@ ui <- fluidPage(
                              height: auto;
 
                             }
-                        "
+                            .space-before-panel {
+                            margin-top: 50px;
+                            }
+                            .container-box {
+                            background-color: #f9f9f9;
+                            padding: 20px;
+                            border-radius: 10px;
+                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                            }
+                            .table1-output {
+                            width: 100%;
+                            overflow-x: auto;
+                            }
+      "
     )
   )),
   
@@ -196,8 +224,9 @@ ui <- fluidPage(
     "UPSTaRT",
     # UI Tab 1: DATA
     tabPanel(
-      "DATA",
+      "DATA OVERVIEW",
       fluidRow(
+        h3("Data Overview", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
         column(
           12,
           class = "compact-container",
@@ -212,24 +241,26 @@ ui <- fluidPage(
           # Tabular
           conditionalPanel(
             condition = "input.data_choice == 'tabular'",
-            radioButtons(
+            selectInput(
               inputId = "data_choice_tabular",
-              label = "Choose Dataset:",
+              label = "Choose Dataset to view:",
               choices = list(
-                "LUAD TCGA Pan Can Atlas 2018 Clinical Data" = "luad_data1",
-                "NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2",
-                "LUAD TCGA Firehose Legacy Clinical Data" = "luad_data3",
-                "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4"
+                "LUAD TCGA Pan Can Atlas 2018" = "luad_data1",
+                "NSCLC-Radiomics Lung1" = "nsclc_data2",
+                "LUAD TCGA Firehose Legacy" = "luad_data3",
+                "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4",
+                "GDSC1" = "drug_data",
+                "GDSC2" = "drug_data2"
               )
             )
           ),
           # Image
           conditionalPanel(
             condition = "input.data_choice == 'image'",
-            radioButtons(
+            selectInput(
               inputId = "data_choice_image",
               label = "Choose Dataset:",
-              choices = list("NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2")
+              choices = list("NSCLC-Radiomics Lung1" = "nsclc_data2")
             )
           )
         )
@@ -239,7 +270,9 @@ ui <- fluidPage(
         condition = "input.data_choice == 'tabular' && input.data_choice_tabular == 'luad_data1'",
         h1("LUAD TCGA Pan Can Atlas 2018 Clinical Data"),
         div(class = "scrollable-table", DTOutput("data_dsout1")),
-        h4("Summary of LUAD TCGA Pan Can Atlas 2018 Clinical Data"),
+        div(class = "space-before-panel"),
+        
+        h3("Summary in R", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
         div(class = "summary-text-box", verbatimTextOutput("data_summary1"))
       ),
       # Tabular NSCLC 2
@@ -247,7 +280,9 @@ ui <- fluidPage(
         condition = "input.data_choice == 'tabular' && input.data_choice_tabular == 'nsclc_data2'",
         h1("NSCLC-Radiomics Lung1 Clinical Data"),
         div(class = "scrollable-table", DTOutput("data_dsout2")),
-        h4("Summary of NSCLC-Radiomics Lung1 Clinical Data"),
+        div(class = "space-before-panel"),
+        
+        h3("Summary in R", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
         div(class = "summary-text-box", verbatimTextOutput("data_summary2"))
       ),
       # Tabular LUAD 3
@@ -255,7 +290,9 @@ ui <- fluidPage(
         condition = "input.data_choice == 'tabular' && input.data_choice_tabular == 'luad_data3'",
         h1("LUAD TCGA Firehose Legacy Clinical Data"),
         div(class = "scrollable-table", DTOutput("data_dsout3")),
-        h4("Summary of LUAD TCGA Firehose Legacy Clinical Data"),
+        div(class = "space-before-panel"),
+        
+        h3("Summary in R", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
         div(class = "summary-text-box", verbatimTextOutput("data_summary3"))
       ),
       # Tabular LUAD 4
@@ -263,25 +300,69 @@ ui <- fluidPage(
         condition = "input.data_choice == 'tabular' && input.data_choice_tabular == 'luad_data4'",
         h1("LUAD (OncoSG, Nat Genet 2020) Clinical Data"),
         div(class = "scrollable-table", DTOutput("data_dsout4")),
-        h4("Summary of LUAD (OncoSG, Nat Genet 2020) Clinical Data"),
+        div(class = "space-before-panel"),
+        
+        h3("Summary in R", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
         div(class = "summary-text-box", verbatimTextOutput("data_summary4"))
+      ),
+      # Tabular DRUG 5
+      conditionalPanel(
+        condition = "input.data_choice == 'tabular' && input.data_choice_tabular == 'drug_data'",
+        h1("GDSC1 Drug Data"),
+        div(class = "scrollable-table", DTOutput("data_dsout5")),
+        div(class = "space-before-panel"),
+        
+        h3("Summary in R", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+        div(class = "summary-text-box", verbatimTextOutput("data_summary5"))
+      ),
+      # Tabular DRUG 6
+      conditionalPanel(
+        condition = "input.data_choice == 'tabular' && input.data_choice_tabular == 'drug_data2'",
+        h1("GDSC2 Drug Data"),
+        div(class = "scrollable-table", DTOutput("data_dsout6")),
+        div(class = "space-before-panel"),
+        
+        h3("Summary in R", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+        div(class = "summary-text-box", verbatimTextOutput("data_summary6"))
       ),
       # Image NSCLC
       conditionalPanel(
         condition = "input.data_choice == 'image' && input.data_choice_image == 'nsclc_data2'",
-        h1("NSCLC Image Data"),
-        h4("Dimensions: 512x512"),
-        h4("Format: DICOM"),
-        h4("Number of samples: 422"),
-        h4("Number of Images: 52,073"),
-        h4("Modality: CT/RT")
+        div(
+          style = "border: 2px solid #606060; border-radius: 5px; padding: 15px; background-color: #f9f9f9; box-shadow: 0 4px 8px rgba(0,0,0,0.1);",
+          h3("NSCLC Image Data", style = "color: #4f4f4f;"),
+          h4("Dimensions: 512x512"),
+          h4("Format: DICOM"),
+          h4("Number of samples: 422"),
+          h4("Number of Images: 52,073"),
+          h4("Modality: CT/RT")
+        )
       )
     ),
     
-    # UI Tab 2: PLOTS
+    # UI Tab 2: STRATIFIED ANALYSIS
+    
+    tabPanel(
+      "STRATIFIED ANALYSIS",
+      fluidRow(
+        
+        h3("Descriptive Statistics with table1 Package", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+        selectInput('dataset_t1_choice', 'Select Dataset', choices = names(datasets_clinical)),
+        uiOutput("variable_select"), # Dynamic variable selection based on chosen dataset
+        
+        div(style = "border-color: #C0C0C0; border-width: 1px; border-style: solid; padding: 15px;",
+            h3(""),
+            div(class = "table1-output", tableOutput("T1"))
+        )
+      )
+    ),
+    
+    
+    # UI Tab 3: PLOTS
     tabPanel(
       "PLOTS",
       fluidRow(
+        h3("Data Visualisation with plotly Package", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
         column(
           12,
           class = "compact-container",
@@ -358,28 +439,115 @@ ui <- fluidPage(
       column(12, class = "compact-container", div(class = "compact-select", htmlOutput("total_samples")))
     ),
     
-    # UI Tab 3: CORRELATION MATRIX
+    # UI Tab 4: CORRELATION MATRIX
     tabPanel("CORRELATION MATRIX", fluidRow(
-      mainPanel(
-        radioButtons(
+      h3("Correlation Matrix with corrPlot package", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+      column(
+        12,
+        class = "compact-container",
+        div(
+          class = "compact-select",
+          radioButtons(
           inputId = "cor_matrix_choice",
           label = "Choose Dataset:",
           choices = list(
             "LUAD TCGA Pan Can Atlas 2018 Clinical Data" = "luad_data1",
             "NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2",
             "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4"
-          )
+          ))
         ),
         class = "compact-select",
-        plotOutput("corrPlot", width = "1024", height = "1024px")
+        plotOutput("corrPlot", width = "800px", height = "800px")
       ),
-      
-      
-      
     )),
     
-    # UI Tab 4: IMAGES
+    # UI Tab 5: DRUG SENSITIVITY
+    tabPanel("DRUG SENSITIVITY", fluidRow(
+      h3("Drug Sensitivity T-test Analysis", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+      sidebarLayout(
+        sidebarPanel(
+          selectInput("dataset_choice", "Select Dataset:", choices = names(datasets_drug)),
+          # The datasets in the app are only lung_NSCLC_adenocarcinoma "Tissue Sub-type"
+          selectInput("group_var", "Select Grouping Variable:", choices = c("Drug Name", "Cell Line Name", "Tissue Sub-type")),
+          uiOutput("level1_ui"),
+          uiOutput("level2_ui"),
+          actionButton("run_test", "Run T-test")
+        ),
+        mainPanel(
+          verbatimTextOutput("t_test_result")
+        )
+      ))
+    ),
+    
+    # UI Tab 6: RADIOGENOMIC ANALYSIS
+    tabPanel("RADIOGX ANALYSIS", fluidRow(
+      h3("Radiogenomic Analysis with RadioGx", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+      sidebarLayout(
+        sidebarPanel(
+          selectInput("output_choice", "Select Output to Display:", 
+                      choices = list(
+                        "Radiogenomic Data" = "data",
+                        "Molecular Feature Data" = "molecularFeatureData",
+                        "Sensitivity Data" = "sensitivity",
+                        "Linear Quadratic Model" = "LQ_model",
+                        "Survival Fraction After 2 Units" = "survFracAfter2Units",
+                        "Dose for 10% Survival" = "dose10PercentSurv",
+                        "Area Under Dose-Response Curve" = "areaUnderDoseRespCurve",
+                        "Dose-Response Curve" = "doseResponseCurve",
+                        "Radiation Sensitivity Signatures" = "radiationSensitivitySignatures"
+                      )
+          ),
+          uiOutput("cell_line_ui")
+        ),
+        mainPanel(
+          lapply(c("data", "molecularFeatureData", "sensitivity", "LQ_model", "survFracAfter2Units", 
+                   "dose10PercentSurv", "areaUnderDoseRespCurve", "doseResponseCurve", "radiationSensitivitySignatures"), function(choice) {
+                     conditionalPanel(
+                       condition = paste0("input.output_choice == '", choice, "'"),
+                       if (choice == "doseResponseCurve") {
+                         plotOutput(paste0("radioGx_", choice))
+                       } else {
+                         verbatimTextOutput(paste0("radioGx_", choice))
+                       }
+                     )
+                   })
+        )
+      )
+    )),
+    
+    # New Tab for PharmacoGx Analysis
+    tabPanel("PHARMACOGX ANALYSIS", fluidRow(
+      h3("Pharmacogenomic Analysis with PharmacoGx", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+      sidebarLayout(
+        sidebarPanel(
+          selectInput("pharmaco_output_choice", "Select Output to Display:", 
+                      choices = list(
+                        "Show Pharmacogenomic Data" = "pharmacoData",
+                        "Drug Dose Response Curve" = "doseResponseCurve",
+                        "Sensitivity Signatures" = "sensitivitySignatures"
+                      )
+          ),
+          uiOutput("pharmaco_cell_line_ui"),
+          uiOutput("pharmaco_drug_ui")
+        ),
+        mainPanel(
+          lapply(c("pharmacoData", "doseResponseCurve", "sensitivitySignatures"), function(choice) {
+            conditionalPanel(
+              condition = paste0("input.pharmaco_output_choice == '", choice, "'"),
+              if (choice == "doseResponseCurve") {
+                plotOutput(paste0("pharmacoGx_", choice))
+              } else {
+                verbatimTextOutput(paste0("pharmacoGx_", choice))
+              }
+            )
+          })
+        )
+      )
+    )),
+    
+    # UI Tab 7: IMAGES
     tabPanel("IMAGES", fluidRow(
+      h3("DICOM Viewer", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
       sidebarLayout(
         sidebarPanel(
           selectInput("dataset_selector", "Choose Dataset:", choices = names(datasets)),
@@ -392,8 +560,10 @@ ui <- fluidPage(
       ))
     ),
     
-    # UI Tab 5: REPORT
-    tabPanel("REPORT", mainPanel(includeMarkdown("www/Report.md")))
+    # UI Tab 8: REPORT
+    tabPanel("REPORT", 
+             h3("Research Report", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+             mainPanel(includeMarkdown("www/Report.md")))
     
   )
 )
@@ -405,14 +575,14 @@ ui <- fluidPage(
 # Define server function
 server <- function(input, output, session) {
   
-  # SERVER Tab 1: DATA
+  # SERVER Tab 1: DATA OVERVIEW
   
   # List of data frames
-  data_list <- list(luad_data1, nsclc_data2, luad_data3, luad_data4)
+  data_list <- list(luad_data1, nsclc_data2, luad_data3, luad_data4, drug_data, drug_data2)
   
   # Names for the outputs
-  output_names <- c("data_dsout1", "data_dsout2", "data_dsout3", "data_dsout4")
-  summary_names <- c("data_summary1", "data_summary2", "data_summary3", "data_summary4")
+  output_names <- c("data_dsout1", "data_dsout2", "data_dsout3", "data_dsout4", "data_dsout5", "data_dsout6")
+  summary_names <- c("data_summary1", "data_summary2", "data_summary3", "data_summary4", "data_summary5", "data_summary6")
   
   # Function to create DataTable
   render_data_table <- function(data, name) {
@@ -436,7 +606,68 @@ server <- function(input, output, session) {
   
   
   
-  # SERVER Tab 2: PLOTS
+  
+  
+  # SERVER Tab 2: STRATIFIED ANALYSIS
+  
+  # Table1 Descriptive Statistics
+  # (general statistics and stratified analysis by a grouping variable)
+  
+  # Reactive expression to get selected dataset
+  selected_data_t1 <- reactive({
+    datasets_clinical[[input$dataset_t1_choice]]
+  })
+  
+  # Dynamic UI for selecting variable based on selected dataset
+  output$variable_select <- renderUI({
+    req(selected_data_t1())
+    
+    # Get column names from the selected dataset
+    column_names <- names(selected_data_t1())
+    
+    # Filter out 'PatientID' and 'Patient ID' from the list of variables
+    cat_vars <- setdiff(column_names, c("PatientID", "Patient ID", "Sample ID"))
+    selectInput('cat_var', 'Variable', choices = cat_vars)
+  })
+  
+  # Reactive expression to filter data based on selected group
+  filtered_data_t1 <- reactive({
+    data_t1 <- selected_data_t1()
+    
+    # Common columns to use if they exist in the dataset
+    common_columns_t1 <- c("Diagnosis Age", "age", "Age", "sex", "Sex", "Gender", "Race Category", "Neoplasm Disease Stage American Joint Committee on Cancer Code")
+    
+    # Check which common columns are present in the dataset
+    present_common_columns_t1 <- intersect(common_columns_t1, colnames(data_t1))
+    
+    if (!is.null(input$cat_var) && input$cat_var != "" && input$cat_var %in% colnames(data_t1)) {
+      selected_columns_t1 <- c(present_common_columns_t1, input$cat_var)
+      
+      selected_data_t1 <- data_t1 %>%
+        select(any_of(selected_columns_t1)) %>%
+        drop_na()
+      
+      return(selected_data_t1)
+    } else {
+      return(data_t1 %>% select(any_of(present_common_columns_t1)) %>% drop_na())
+    }
+  })
+  
+  # Render the table
+  output$T1 <- renderTable({
+    data_t1 <- filtered_data_t1()
+    
+    # Generate descriptive statistics table with stratification
+    if (!is.null(input$cat_var) && input$cat_var != "" && input$cat_var %in% colnames(data_t1)) {
+      stratified_var <- input$cat_var
+      table1(~ . | data_t1[[stratified_var]], data = data_t1, render.continuous=c(.="Mean (SD)"))
+    } else {
+      table1(~ ., data = data_t1, render.continuous=c(.="Mean (SD)"))
+    }
+  })
+  
+  
+  # SERVER Tab 3: PLOTS
   
   # Reactive expression to filter data based on plot choice
   filtered_data <- reactive({
@@ -650,6 +881,7 @@ server <- function(input, output, session) {
     plot
   })
   
+  
   total_samples <- reactive({
     dataset_choice <- switch(
       input$plot_data_choice_tabular,
@@ -669,12 +901,11 @@ server <- function(input, output, session) {
     )
   })
   
-  # SERVER Tab 3: CORRELATION MATRIX
+  # SERVER Tab 4: CORRELATION MATRIX
   
-  # Diagnosis Age: Has a negative correlation with variables such as Overall Survival (Months) and Progress Free Survival (Months), indicating that older patients may have poorer outcomes
+  # (Diagnosis Age: Has a negative correlation with variables such as Overall Survival (Months) and Progress Free Survival (Months), indicating that older patients may have poorer outcomes
   
   # Select numeric columns for correlation analysis
-  
   
   numeric_data <- reactive({
     selected_data <- switch(
@@ -697,7 +928,7 @@ server <- function(input, output, session) {
     switch(
       input$cor_matrix_choice,
       "luad_data1" = numeric_data()[, c("Diagnosis Age", "Mutation Count", "Overall Survival (Months)")],
-      "nsclc_data2" = numeric_data()[, c("age", "Survival.time")],
+      "nsclc_data2" = numeric_data()[, c("age", "Survival.time", "deadstatus.event")],
       "luad_data4" = numeric_data()[, c("Age", "Mutation Count", "Overall survival months", "Person Cigarette Smoking History Pack Year Value")]
     )
   })
@@ -711,8 +942,9 @@ server <- function(input, output, session) {
       # Set the margins for the plot
       par(mar = c(2, 2, 1, 1))
       # Plot the correlation matrix
-      corrplot(cor_matrix, method = "color", tl.cex = 1.4, 
-               title = "Correlation Matrix", mar = c(0, 0, 1, 0),
+      corrplot(cor_matrix, method = "color", tl.cex = 1.4,
+               diag = FALSE,
+               type = "upper",
                col = colorRampPalette(c("blue", "white", "red"))(100),
                number.cex = 0.7, tl.col = "black")
     } else {
@@ -722,7 +954,239 @@ server <- function(input, output, session) {
     }
   })
   
-  # SERVER Tab 4: IMAGES
+  
+  
+  # SERVER Tab 5: DRUG SENSITIVITY
+  
+  # Generate UI for selecting the first level
+  output$level1_ui <- renderUI({
+    req(input$dataset_choice, input$group_var)
+    dataset <- get(datasets_drug[[input$dataset_choice]])
+    levels <- unique(dataset[[input$group_var]])
+    selectInput("level1", "Select First Level:", choices = levels)
+  })
+  
+  # Generate UI for selecting the second level based on the first level
+  output$level2_ui <- renderUI({
+    req(input$dataset_choice, input$group_var, input$level1)
+    dataset <- get(datasets_drug[[input$dataset_choice]])
+    levels <- setdiff(unique(dataset[[input$group_var]]), input$level1)
+    selectInput("level2", "Select Second Level:", choices = levels)
+  })
+  
+  observeEvent(input$run_test, {
+    req(input$dataset_choice, input$group_var, input$level1, input$level2)
+    dataset <- get(datasets_drug[[input$dataset_choice]])
+    # Filter the data based on the selected levels
+    filtered_data <- dataset %>% 
+      filter(get(input$group_var) %in% c(input$level1, input$level2))
+    
+    # Perform the t-test based on the selected grouping variable
+    t_test_result <- t.test(IC50 ~ get(input$group_var), data = filtered_data)
+    
+    # Display the t-test result
+    output$t_test_result <- renderPrint({
+      t_test_result
+    })
+  })
+  
+  
+  # SERVER Tab 6: RADIOGX ANALYSIS  
+  
+  # Load or define dataset
+  data("clevelandSmall")
+  
+  # UI for selecting cell line
+  output$cell_line_ui <- renderUI({
+    if (input$output_choice %in% c("LQ_model", "survFracAfter2Units", "dose10PercentSurv", "areaUnderDoseRespCurve", "doseResponseCurve")) {
+      selectInput("cell_line", "Select Cell Line:", choices = cellInfo(clevelandSmall)$sampleid)
+    }
+  })
+  
+  # Function to compute metrics based on the selected cell line
+  computeMetrics <- reactive({
+    req(input$cell_line)
+    sensRaw <- sensitivityRaw(clevelandSmall)
+    cell_index <- which(cellInfo(clevelandSmall)$sampleid == input$cell_line)
+    selected_sensRaw <- sensRaw[cell_index, , ]
+    radiationDoses <- selected_sensRaw[, 'Dose']
+    survivalFractions <- selected_sensRaw[, 'Viability']
+    LQmodel <- linearQuadraticModel(D = radiationDoses, SF = survivalFractions)
+    
+    list(
+      LQmodel = LQmodel,
+      survFracAfter2Units = computeSF2(pars = LQmodel),
+      dose10PercentSurv = computeD10(pars = LQmodel),
+      areaUnderDoseRespCurve = RadioGx::computeAUC(D = radiationDoses, pars = LQmodel, lower = 0, upper = 1)
+    )
+  })
+  
+  # Render analysis results
+  output$analysis_results <- renderPrint({
+    if (input$output_choice %in% c("LQ_model", "survFracAfter2Units", "dose10PercentSurv", "areaUnderDoseRespCurve", "doseResponseCurve", "radiationSensitivitySignatures")) {
+      metrics <- computeMetrics()
+      req(metrics)
+      if (input$output_choice == "LQ_model") {
+        print(metrics$LQmodel)
+      } else if (input$output_choice == "survFracAfter2Units") {
+        print(metrics$survFracAfter2Units)
+      } else if (input$output_choice == "dose10PercentSurv") {
+        print(metrics$dose10PercentSurv)
+      } else if (input$output_choice == "areaUnderDoseRespCurve") {
+        print(metrics$areaUnderDoseRespCurve)
+      } else if (input$output_choice == "radiationSensitivitySignatures") {
+        print(metrics$radSensSig@.Data)
+      }
+    }
+  })
+  
+  # Render dose response plot
+  output$radioGx_doseResponseCurve <- renderPlot({
+    req(input$cell_line)
+    # Dose-Response Curve
+    doseResponseCurve(
+      rSets = list(clevelandSmall),
+      cellline = input$cell_line
+    )
+  })
+  
+  output$radioGx_data <- renderPrint({
+    cat("Radiogenomic dataset containing metadata/annotations, molecular data and radiation response data.\n\n")
+    clevelandSmall
+  })
+  
+  output$radioGx_molecularFeatureData <- renderPrint({
+    cat("Shows first 10 rows of molecular feature data.\n\n")
+    # Access the molecular feature data
+    mProf <- molecularProfiles(clevelandSmall, 'rnaseq')
+    selected_rows <- mProf[1:10, ]  # Select the first 10 rows
+    knitr::kable(selected_rows)
+  })
+  
+  output$radioGx_sensitivity <- renderPrint({
+    cat("Shows radiation doses and associated survival data for each cell line.\n\n")
+    knitr::kable(sensitivityRaw(clevelandSmall))
+  })
+  
+  output$radioGx_LQ_model <- renderPrint({
+    metrics <- computeMetrics()
+    req(metrics)
+    cat("Based on the attribute we can see if the model fit for this data is good, with x% of observed variance explained by the model.\n\n")
+    metrics$LQmodel
+  })
+  
+  output$radioGx_survFracAfter2Units <- renderPrint({
+    metrics <- computeMetrics()
+    req(metrics)
+    cat("Surviving fraction after the cancer cells are exposed to radiation twice.\n\n")
+    print(metrics$survFracAfter2Units)
+  })
+  
+  output$radioGx_dose10PercentSurv <- renderPrint({
+    metrics <- computeMetrics()
+    req(metrics)
+    cat("Needed number of units of radiation on average to be administered to result in 10% cell-line survival.\n\n")
+    print(metrics$dose10PercentSurv)
+  })
+  
+  output$radioGx_areaUnderDoseRespCurve <- renderPrint({
+    metrics <- computeMetrics()
+    req(metrics)
+    cat("Cell kill proportion after 1 Gy radiation.\n\n")
+    print(metrics$areaUnderDoseRespCurve)
+  })
+  
+  output$radioGx_radiationSensitivitySignatures <- renderPrint({
+    radSensSig <- radSensitivitySig(clevelandSmall, mDataType='rna', features=fNames(clevelandSmall, 'rna')[1:10], nthread=1)
+    cat("Radiation sensitivity signatures (first 10 rows selected).\n\n
+    
+        Estimate: Positive values indicate that higher expression of the gene is associated with increased radio-sensitivity,\n
+        while negative values indicate association with radio-resistance.\n\n
+        
+        Low p-values (typically < 0.05) and FDR values suggest that the association is statistically significant\n\n.
+        
+        T-Statistic and F-Statistic: Higher values indicate stronger evidence against the null hypothesis,\n
+        implying a significant relationship between gene expression and radiation sensitivity.\n\n
+        ")
+    radSensSig@.Data
+  })
+  
+  # SERVER Tab 7: PHARMACOGX ANALYSIS 
+  
+  # Load or define dataset
+  data("CCLEsmall")
+  
+  # UI for selecting cell line
+  output$pharmaco_cell_line_ui <- renderUI({
+    if (input$pharmaco_output_choice %in% c("doseResponseCurve")) {
+      selectInput("pharmaco_cell_line", "Select Cell Line:", choices = cellInfo(CCLEsmall)$sampleid)
+    }
+  })
+  
+  # UI for selecting drug
+  output$pharmaco_drug_ui <- renderUI({
+    if (input$pharmaco_output_choice %in% c("doseResponseCurve", "sensitivitySignatures")) {
+      selectInput("pharmaco_drug", "Select Drug:", choices = drugInfo(CCLEsmall)$treatmentid)
+    }
+  })
+  
+  # Show a warning message when the "Drug Dose Response Curve" is selected
+  observeEvent(input$pharmaco_output_choice, {
+    if (input$pharmaco_output_choice == "doseResponseCurve") {
+      showModal(modalDialog(
+        title = "Warning",
+        "Please note that many drug-cell line combinations have not been tested. You may encounter cases where the selected combination was not tested.",
+        easyClose = TRUE,
+        footer = NULL
+      ))
+    }
+  })
+  
+  # Function to compute drug sensitivity based on the selected drug
+  computeDrugSensitivity <- reactive({
+    req(input$pharmaco_drug)
+    drug_response <- summarizeSensitivityProfiles(pSet = CCLEsmall, sensitivity.measure = "auc_published", summary.stat = "median")
+    selected_drug_response <- drug_response[input$pharmaco_drug, ]
+    selected_drug_response
+  })
+  
+  # Render pharmacogenomic data
+  output$pharmacoGx_pharmacoData <- renderPrint({
+    cat("Pharmacogenomic dataset containing metadata/annotations, molecular data and drug response data.\n\n")
+    CCLEsmall
+  })
+  
+  # Render drug dose response curve
+  output$pharmacoGx_doseResponseCurve <- renderPlot({
+    req(input$pharmaco_cell_line, input$pharmaco_drug)
+    drugDoseResponseCurve(
+      pSet = CCLEsmall,
+      drug = input$pharmaco_drug,
+      cell = input$pharmaco_cell_line
+    )
+  })
+  
+  # Render sensitivity signatures
+  output$pharmacoGx_sensitivitySignatures <- renderPrint({
+    req(input$pharmaco_cell_line, input$pharmaco_drug)
+    sensSig <- drugSensitivitySig(CCLEsmall, mDataType='rna', drug = input$pharmaco_drug, cellline = input$pharmaco_cell_line, features=fNames(CCLEsmall, 'rna')[1:10], nthread=1)
+    cat("Drug sensitivity signatures (first 10 rows selected).\n\n
+    
+        Estimate: Positive values indicate that higher expression of the gene is associated with increased drug sensitivity,\n
+        while negative values indicate association with drug resistance.\n\n
+        
+        Low p-values (typically < 0.05) and FDR values suggest that the association is statistically significant\n\n.
+        
+        T-Statistic and F-Statistic: Higher values indicate stronger evidence against the null hypothesis,\n
+        implying a significant relationship between gene expression and drug sensitivity.\n\n
+        ")
+    sensSig@.Data
+  })
+  
+  
+  
+  # SERVER Tab 8: IMAGES
+  
   # Initialize reactiveVal to hold images
   images <- reactiveVal(NULL)
   
@@ -742,16 +1206,15 @@ server <- function(input, output, session) {
     list(src = images()[input$image_slider], contentType = "image/png")
   }, deleteFile = FALSE)
   
-  # SERVER Tab 5: REPORT
+  
+  
+  # SERVER Tab 9: REPORT
   
   # Output for the report text file
   output$research_report <- renderText({
     text_content
   })
 }
-
-
-
 
 # Create Shiny object
 shinyApp(ui = ui, server = server)
