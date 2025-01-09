@@ -687,7 +687,10 @@ server <- function(input, output, session) {
                  x = "Age", y = "Count")
         },
         "sex" = {
-          sex_counts <- filt_data %>% count(Sex)
+          sex_counts <- filt_data %>%
+            group_by(Sex) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
           plot_ly(sex_counts, labels = ~Sex, values = ~n, type = 'pie', 
                   textinfo = 'label+percent', insidetextorientation = 'radial',
                   marker = list(colors = c('pink', 'skyblue'))) %>%
@@ -698,7 +701,10 @@ server <- function(input, output, session) {
           
         },
         "race" = {
-          race_counts <- filt_data %>% count(`Race Category`)
+          race_counts <- filt_data %>%
+            group_by(`Race Category`) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
           
           # Define a palette of colors for the pie chart
           colors <- c('skyblue', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
@@ -719,7 +725,10 @@ server <- function(input, output, session) {
           
         },
         "ethnicity" = {
-          ethnicity_counts <- filt_data %>% count(`Ethnicity Category`)
+          ethnicity_counts <- filt_data %>%
+            group_by(`Ethnicity Category`) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
           
           colors <- c('#e5c787', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
           plot_ly(ethnicity_counts, labels = ~`Ethnicity Category`, values = ~n, type = 'pie',
@@ -745,7 +754,11 @@ server <- function(input, output, session) {
             labs(title = "Distribution of Diagnosis Age", x = "Age", y = "Count")
         },
         "sex2" = {
-          sex_counts <- filt_data %>% count(gender)
+          sex_counts <- filt_data %>%
+            group_by(gender) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
+          
           plot_ly(sex_counts, labels = ~gender, values = ~n, type = 'pie', 
                   textinfo = 'label+percent', insidetextorientation = 'radial',
                   marker = list(colors = c('pink', 'skyblue'))) %>%
@@ -763,7 +776,11 @@ server <- function(input, output, session) {
             labs(title = "Distribution of Diagnosis Age", x = "Age", y = "Count")
         },
         "sex3" = {
-          sex_counts <- filt_data %>% count(Sex)
+          sex_counts <- filt_data %>%
+            group_by(Sex) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
+          
           plot_ly(sex_counts, labels = ~Sex, values = ~n, type = 'pie', 
                   textinfo = 'label+percent', insidetextorientation = 'radial',
                   marker = list(colors = c('pink', 'skyblue'))) %>%
@@ -772,7 +789,10 @@ server <- function(input, output, session) {
                    margin = list(t = 80))
         },
         "race3" = {
-          race_counts <- filt_data %>% count(`Race Category`)
+          race_counts <- filt_data %>%
+            group_by(`Race Category`) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
           
           # Define a palette of colors for the pie chart
           colors <- c('skyblue', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
@@ -791,7 +811,10 @@ server <- function(input, output, session) {
                    uniformtext = list(minsize = 10, mode = 'show'))
         },
         "ethnicity3" = {
-          ethnicity_counts <- filt_data %>% count(`Ethnicity Category`)
+          ethnicity_counts <- filt_data %>%
+            group_by(`Ethnicity Category`) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
           
           colors <- c('#e5c787', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
           plot_ly(ethnicity_counts, labels = ~`Ethnicity Category`, values = ~n, type = 'pie',
@@ -817,7 +840,11 @@ server <- function(input, output, session) {
             labs(title = "Distribution of Diagnosis Age", x = "Age", y = "Count")
         },
         "sex4" = {
-          sex_counts <- filt_data %>% count(Sex)
+          sex_counts <- filt_data %>%
+            group_by(Sex) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
+          
           plot_ly(sex_counts, labels = ~Sex, values = ~n, type = 'pie', 
                   textinfo = 'label+percent', insidetextorientation = 'radial',
                   marker = list(colors = c('pink', 'skyblue'))) %>%
@@ -826,7 +853,10 @@ server <- function(input, output, session) {
                    margin = list(t = 80))
         },
         "ethnicity4" = {
-          ethnicity_counts <- filt_data %>% count(`Ethnicity Category`)
+          ethnicity_counts <- filt_data %>%
+            group_by(`Ethnicity Category`) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
           
           colors <- c('#e5c787', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
           plot_ly(ethnicity_counts, labels = ~`Ethnicity Category`, values = ~n, type = 'pie',
