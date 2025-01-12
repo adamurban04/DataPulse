@@ -19,9 +19,9 @@ library(PharmacoGx)
 
 # Read the TSV/CSV file for Datasets
 
-# https://www.cancerrxgene.org/downloads/drug_data?pathway=All&tissue=LUAD
-drug_data <- read_csv("www/LUAD_IC_Sun_Jul_14_11_36_44_2024.csv")
 # https://www.cancerrxgene.org/downloads/drug_data?screening_set=GDSC1&tissue=LUAD
+drug_data <- read_csv("www/LUAD_IC_Sun_Jul_14_11_36_44_2024.csv")
+# https://www.cancerrxgene.org/downloads/drug_data?screening_set=GDSC2&tissue=LUAD
 drug_data2 <- read_csv("www/LUAD_IC_Thu_Jul_18_13_08_48_2024.csv")
 
 # List of drug datasets
