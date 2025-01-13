@@ -7,6 +7,6 @@ Open-source contribution:
 
 # OncoEx
 *Shiny app that provides statistical and exploratory data analysis and the means for identifying data bias*  
-You can view this tool at: [adamurban.shinyapps.io/Research](https://adamurban.shinyapps.io/OncoEx/)
+You can view this tool at: [adamurban.shinyapps.io/OncoEx](https://adamurban.shinyapps.io/OncoEx/)
 
 And read more about the project at: [adamurban04.github.io/portfolio/research/upstart-summer-research](https://adamurban04.github.io/portfolio/research/upstart-summer-research/)
