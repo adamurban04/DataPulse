@@ -1,4 +1,4 @@
-# FULL SHINY APP FOR SHINYAPPS.IO DEPLOYMENT
+# ONCOEX SHINY APP
 
 # Load R packages
 library(shiny)  # Shiny App
@@ -20,9 +20,9 @@ library(PharmacoGx)
 # Read the TSV/CSV file for Datasets
 
 # https://www.cancerrxgene.org/downloads/drug_data?screening_set=GDSC1&tissue=LUAD
-drug_data <- read_csv("www/LUAD_IC_Sun_Jul_14_11_36_44_2024.csv")
+drug_data <- read_csv("www/LUAD_IC_Sun_Jul_14_11_36_44_2024.csv", show_col_types = FALSE)
 # https://www.cancerrxgene.org/downloads/drug_data?screening_set=GDSC2&tissue=LUAD
-drug_data2 <- read_csv("www/LUAD_IC_Thu_Jul_18_13_08_48_2024.csv")
+drug_data2 <- read_csv("www/LUAD_IC_Thu_Jul_18_13_08_48_2024.csv", show_col_types = FALSE)
 
 # List of drug datasets
 datasets_drug <- list(
@@ -31,13 +31,13 @@ datasets_drug <- list(
 )
 
 # https://www.cbioportal.org/study/clinicalData?id=luad_tcga_pan_can_atlas_2018
-luad_data1 <- read_tsv("www/luad_tcga_pan_can_atlas_2018_clinical_data.tsv")
+luad_data1 <- read_tsv("www/luad_tcga_pan_can_atlas_2018_clinical_data.tsv", show_col_types = FALSE)
 # https://www.cancerimagingarchive.net/collection/nsclc-radiomics/
-nsclc_data2 <- read.csv("www/manifest1603198545583/NSCLC-Radiomics-Lung1.clinical-version3-Oct-2019.csv")
+nsclc_data2 <- read_csv("www/manifest1603198545583/NSCLC-Radiomics-Lung1.clinical-version3-Oct-2019.csv", show_col_types = FALSE)
 # https://www.cbioportal.org/study/clinicalData?id=luad_tcga
-luad_data3 <- read_tsv("www/luad_tcga_firehose_legacy_clinical_data.tsv")
+luad_data3 <- read_tsv("www/luad_tcga_firehose_legacy_clinical_data.tsv", show_col_types = FALSE)
 # https://www.cbioportal.org/study/clinicalData?id=luad_oncosg_2020
-luad_data4 <- read_tsv("www/luad_oncosg_2020_clinical_data.tsv")
+luad_data4 <- read_tsv("www/luad_oncosg_2020_clinical_data.tsv", show_col_types = FALSE)
 
 datasets_clinical <- list("LUAD TCGA" = luad_data1, "NSCLC Radiomics" = nsclc_data2, "LUAD TCGA Firehose" = luad_data3, "LUAD OncoSG" = luad_data4)
 
@@ -192,7 +192,7 @@ ui <- fluidPage(
   
   # Navigation
   navbarPage(
-    "UPSTaRT",
+    "OncoEx",
     # UI Tab 1: DATA
     tabPanel(
       "DATA OVERVIEW",
@@ -486,7 +486,7 @@ ui <- fluidPage(
       )
     )),
     
-    # New Tab for PharmacoGx Analysis
+    # UI Tab 7: PHARMACOGENOMIC ANALYSIS
     tabPanel("PHARMACOGX ANALYSIS", fluidRow(
       h3("Pharmacogenomic Analysis with PharmacoGx", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
       sidebarLayout(
@@ -529,12 +529,12 @@ ui <- fluidPage(
           plotOutput("image_display", width = "512px", height = "512px")
         )
       ))
-    ),
-    
+    )
+    #,
     # UI Tab 8: REPORT
-    tabPanel("REPORT", 
-             h3("Research Report", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
-             mainPanel(includeMarkdown("www/Report.md")))
+    #tabPanel("REPORT", 
+             #h3("Research Report", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+             #mainPanel(includeMarkdown("www/Report.md")))
     
   )
 )
@@ -1208,9 +1208,9 @@ server <- function(input, output, session) {
   # SERVER Tab 9: REPORT
   
   # Output for the report text file
-  output$research_report <- renderText({
-    text_content
-  })
+  #output$research_report <- renderText({
+   # text_content
+  #})
 }
 
 
