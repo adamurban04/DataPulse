@@ -1,6 +1,8 @@
 ---
-title: "Shiny App Notebook"
+title: "OncoEx Shiny App Notebook"
 output:
+  html_document:
+    df_print: paged
   html_notebook:
     theme: simplex
 ---
@@ -41,10 +43,10 @@ library(PharmacoGx)
 ```{r}
 # Read the TSV/CSV file for Datasets
 
-# https://www.cancerrxgene.org/downloads/drug_data?pathway=All&tissue=LUAD
-drug_data <- read_csv("www/LUAD_IC_Sun_Jul_14_11_36_44_2024.csv")
 # https://www.cancerrxgene.org/downloads/drug_data?screening_set=GDSC1&tissue=LUAD
-drug_data2 <- read_csv("www/LUAD_IC_Thu_Jul_18_13_08_48_2024.csv")
+drug_data <- read_csv("www/LUAD_IC_Sun_Jul_14_11_36_44_2024.csv", show_col_types = FALSE)
+# https://www.cancerrxgene.org/downloads/drug_data?screening_set=GDSC2&tissue=LUAD
+drug_data2 <- read_csv("www/LUAD_IC_Thu_Jul_18_13_08_48_2024.csv", show_col_types = FALSE)
 
 # List of drug datasets
 datasets_drug <- list(
@@ -53,13 +55,13 @@ datasets_drug <- list(
 )
 
 # https://www.cbioportal.org/study/clinicalData?id=luad_tcga_pan_can_atlas_2018
-luad_data1 <- read_tsv("www/luad_tcga_pan_can_atlas_2018_clinical_data.tsv")
+luad_data1 <- read_tsv("www/luad_tcga_pan_can_atlas_2018_clinical_data.tsv", show_col_types = FALSE)
 # https://www.cancerimagingarchive.net/collection/nsclc-radiomics/
-nsclc_data2 <- read.csv("www/manifest1603198545583/NSCLC-Radiomics-Lung1.clinical-version3-Oct-2019.csv")
+nsclc_data2 <- read_csv("www/manifest1603198545583/NSCLC-Radiomics-Lung1.clinical-version3-Oct-2019.csv", show_col_types = FALSE)
 # https://www.cbioportal.org/study/clinicalData?id=luad_tcga
-luad_data3 <- read_tsv("www/luad_tcga_firehose_legacy_clinical_data.tsv")
+luad_data3 <- read_tsv("www/luad_tcga_firehose_legacy_clinical_data.tsv", show_col_types = FALSE)
 # https://www.cbioportal.org/study/clinicalData?id=luad_oncosg_2020
-luad_data4 <- read_tsv("www/luad_oncosg_2020_clinical_data.tsv")
+luad_data4 <- read_tsv("www/luad_oncosg_2020_clinical_data.tsv", show_col_types = FALSE)
 
 datasets_clinical <- list("LUAD TCGA" = luad_data1, "NSCLC Radiomics" = nsclc_data2, "LUAD TCGA Firehose" = luad_data3, "LUAD OncoSG" = luad_data4)
 
@@ -136,6 +138,7 @@ scan_dicom_files <- function(directory_path) {
 ### 4. UI {#ui}
 
 ```{r}
+# Define UI
 ui <- fluidPage(
   theme = shinytheme("yeti"),
   
@@ -221,7 +224,7 @@ ui <- fluidPage(
   
   # Navigation
   navbarPage(
-    "UPSTaRT",
+    "OncoEx",
     # UI Tab 1: DATA
     tabPanel(
       "DATA OVERVIEW",
@@ -515,7 +518,7 @@ ui <- fluidPage(
       )
     )),
     
-    # New Tab for PharmacoGx Analysis
+    # UI Tab 7: PHARMACOGENOMIC ANALYSIS
     tabPanel("PHARMACOGX ANALYSIS", fluidRow(
       h3("Pharmacogenomic Analysis with PharmacoGx", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
       sidebarLayout(
@@ -545,7 +548,7 @@ ui <- fluidPage(
       )
     )),
     
-    # UI Tab 7: IMAGES
+    # UI Tab 8: IMAGES
     tabPanel("IMAGES", fluidRow(
       h3("DICOM Viewer", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
       sidebarLayout(
@@ -558,12 +561,12 @@ ui <- fluidPage(
           plotOutput("image_display", width = "512px", height = "512px")
         )
       ))
-    ),
-    
-    # UI Tab 8: REPORT
-    tabPanel("REPORT", 
-             h3("Research Report", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
-             mainPanel(includeMarkdown("www/Report.md")))
+    )
+    #,
+    # UI Tab 9: REPORT
+    #tabPanel("REPORT", 
+             #h3("Research Report", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+             #mainPanel(includeMarkdown("www/Report.md")))
     
   )
 )
@@ -720,7 +723,10 @@ server <- function(input, output, session) {
                  x = "Age", y = "Count")
         },
         "sex" = {
-          sex_counts <- filt_data %>% count(Sex)
+          sex_counts <- filt_data %>%
+            group_by(Sex) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
           plot_ly(sex_counts, labels = ~Sex, values = ~n, type = 'pie', 
                   textinfo = 'label+percent', insidetextorientation = 'radial',
                   marker = list(colors = c('pink', 'skyblue'))) %>%
@@ -731,7 +737,10 @@ server <- function(input, output, session) {
           
         },
         "race" = {
-          race_counts <- filt_data %>% count(`Race Category`)
+          race_counts <- filt_data %>%
+            group_by(`Race Category`) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
           
           # Define a palette of colors for the pie chart
           colors <- c('skyblue', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
@@ -752,7 +761,10 @@ server <- function(input, output, session) {
           
         },
         "ethnicity" = {
-          ethnicity_counts <- filt_data %>% count(`Ethnicity Category`)
+          ethnicity_counts <- filt_data %>%
+            group_by(`Ethnicity Category`) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
           
           colors <- c('#e5c787', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
           plot_ly(ethnicity_counts, labels = ~`Ethnicity Category`, values = ~n, type = 'pie',
@@ -778,7 +790,11 @@ server <- function(input, output, session) {
             labs(title = "Distribution of Diagnosis Age", x = "Age", y = "Count")
         },
         "sex2" = {
-          sex_counts <- filt_data %>% count(gender)
+          sex_counts <- filt_data %>%
+            group_by(gender) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
+          
           plot_ly(sex_counts, labels = ~gender, values = ~n, type = 'pie', 
                   textinfo = 'label+percent', insidetextorientation = 'radial',
                   marker = list(colors = c('pink', 'skyblue'))) %>%
@@ -796,7 +812,11 @@ server <- function(input, output, session) {
             labs(title = "Distribution of Diagnosis Age", x = "Age", y = "Count")
         },
         "sex3" = {
-          sex_counts <- filt_data %>% count(Sex)
+          sex_counts <- filt_data %>%
+            group_by(Sex) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
+          
           plot_ly(sex_counts, labels = ~Sex, values = ~n, type = 'pie', 
                   textinfo = 'label+percent', insidetextorientation = 'radial',
                   marker = list(colors = c('pink', 'skyblue'))) %>%
@@ -805,7 +825,10 @@ server <- function(input, output, session) {
                    margin = list(t = 80))
         },
         "race3" = {
-          race_counts <- filt_data %>% count(`Race Category`)
+          race_counts <- filt_data %>%
+            group_by(`Race Category`) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
           
           # Define a palette of colors for the pie chart
           colors <- c('skyblue', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
@@ -824,7 +847,10 @@ server <- function(input, output, session) {
                    uniformtext = list(minsize = 10, mode = 'show'))
         },
         "ethnicity3" = {
-          ethnicity_counts <- filt_data %>% count(`Ethnicity Category`)
+          ethnicity_counts <- filt_data %>%
+            group_by(`Ethnicity Category`) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
           
           colors <- c('#e5c787', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
           plot_ly(ethnicity_counts, labels = ~`Ethnicity Category`, values = ~n, type = 'pie',
@@ -850,7 +876,11 @@ server <- function(input, output, session) {
             labs(title = "Distribution of Diagnosis Age", x = "Age", y = "Count")
         },
         "sex4" = {
-          sex_counts <- filt_data %>% count(Sex)
+          sex_counts <- filt_data %>%
+            group_by(Sex) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
+          
           plot_ly(sex_counts, labels = ~Sex, values = ~n, type = 'pie', 
                   textinfo = 'label+percent', insidetextorientation = 'radial',
                   marker = list(colors = c('pink', 'skyblue'))) %>%
@@ -859,7 +889,10 @@ server <- function(input, output, session) {
                    margin = list(t = 80))
         },
         "ethnicity4" = {
-          ethnicity_counts <- filt_data %>% count(`Ethnicity Category`)
+          ethnicity_counts <- filt_data %>%
+            group_by(`Ethnicity Category`) %>%
+            summarize(n = n()) %>%
+            as.data.frame()
           
           colors <- c('#e5c787', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
           plot_ly(ethnicity_counts, labels = ~`Ethnicity Category`, values = ~n, type = 'pie',
@@ -1211,9 +1244,9 @@ server <- function(input, output, session) {
   # SERVER Tab 9: REPORT
   
   # Output for the report text file
-  output$research_report <- renderText({
-    text_content
-  })
+  #output$research_report <- renderText({
+   # text_content
+  #})
 }
 
 # Create Shiny object
