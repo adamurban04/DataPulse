@@ -516,7 +516,7 @@ ui <- fluidPage(
       )
     )),
     
-    # UI Tab 7: IMAGES
+    # UI Tab 8: IMAGES
     tabPanel("IMAGES", fluidRow(
       h3("DICOM Viewer", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
       sidebarLayout(
@@ -531,7 +531,7 @@ ui <- fluidPage(
       ))
     )
     #,
-    # UI Tab 8: REPORT
+    # UI Tab 9: REPORT
     #tabPanel("REPORT", 
              #h3("Research Report", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
              #mainPanel(includeMarkdown("www/Report.md")))
@@ -1212,8 +1212,5 @@ server <- function(input, output, session) {
    # text_content
   #})
 }
-
-
-
 
 shinyApp(ui = ui, server = server)
