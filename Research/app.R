@@ -20,6 +20,13 @@ library(PharmacoGx)
 
 
 
+# Load the dataset for hip fracture
+hip_fracture_data <- read.csv("hip_fracture.csv")
+
+# Subset for filtering columns for hip fracture
+filter_columns <- c("gender", "age", "LOSdays", "marital_status", "ethnicity", "admit_type")
+filtered_data_initial <- hip_fracture_data[filter_columns]
+
 # Read the TSV/CSV file for Datasets
 
 
@@ -164,7 +171,7 @@ ui <- fluidPage(
   )),
   
   navbarPage(
-    "OncoEx",
+    "DataPulse",
     tabPanel(
       "UPLOAD DATA",
       fluidRow(
@@ -446,38 +453,21 @@ ui <- fluidPage(
     ),
     
     # UI Tab 5: DRUG SENSITIVITY
-    # DRUG SENSITIVITY tab with uploaded data support
-    tabPanel(
-      "DRUG SENSITIVITY",
-      fluidRow(
-        h3("Drug Sensitivity T-test Analysis", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
-        sidebarLayout(
-          sidebarPanel(
-            radioButtons(
-              "drug_data_source",
-              "Data Source:",
-              choices = c("Built-in GDSC Data" = "builtin",
-                          "Uploaded Drug Data" = "uploaded")
-            ),
-            conditionalPanel(
-              condition = "input.drug_data_source == 'builtin'",
-              selectInput("dataset_choice", "Select Dataset:", choices = names(datasets_drug))
-            ),
-            conditionalPanel(
-              condition = "input.drug_data_source == 'uploaded'",
-              selectInput("uploaded_drug_data", "Select Dataset:", choices = NULL)
-            ),
-            selectInput("group_var", "Select Grouping Variable:", 
-                        choices = c("Drug Name", "Cell Line Name", "Tissue Sub-type")),
-            uiOutput("level1_ui"),
-            uiOutput("level2_ui"),
-            actionButton("run_test", "Run T-test", class = "btn-primary")
-          ),
-          mainPanel(
-            verbatimTextOutput("t_test_result")
-          )
+    tabPanel("DRUG SENSITIVITY", fluidRow(
+      h3("Drug Sensitivity T-test Analysis", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+      sidebarLayout(
+        sidebarPanel(
+          selectInput("dataset_choice", "Select Dataset:", choices = names(datasets_drug)),
+          # The datasets in the app are only lung_NSCLC_adenocarcinoma "Tissue Sub-type"
+          selectInput("group_var", "Select Grouping Variable:", choices = c("Drug Name", "Cell Line Name", "Tissue Sub-type")),
+          uiOutput("level1_ui"),
+          uiOutput("level2_ui"),
+          actionButton("run_test", "Run T-test")
+        ),
+        mainPanel(
+          verbatimTextOutput("t_test_result")
         )
-      )
+      ))
     ),
     
     
@@ -560,15 +550,37 @@ ui <- fluidPage(
           plotOutput("image_display", width = "512px", height = "512px")
         )
       ))
-    )
+    ),
     #,
     # UI Tab 9: REPORT
     #tabPanel("REPORT", 
     #h3("Research Report", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
     #mainPanel(includeMarkdown("www/Report.md")))
     
+    tabPanel("HIP FRACTURE ANALYSIS", 
+    h3("MIMIC III - Hip Fracture Analysis", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+    
+    sidebarLayout(
+      sidebarPanel(
+        h4("Filters"),
+        uiOutput("filters_ui"),
+        hr(),
+        h4("Graph Settings"),
+        selectInput("x_var", "X-Axis Variable", choices = filter_columns),
+        selectInput("y_var", "Y-Axis Variable", choices = c("None", filter_columns)),
+        selectInput("plot_type", "Plot Type", choices = c("Bar Plot", "Scatter Plot", "Box Plot", "Histogram"))
+      ),
+      
+      mainPanel(
+        tabsetPanel(
+          tabPanel("Filtered Data", DTOutput("filtered_table")),
+          tabPanel("Visualization", plotOutput("dynamic_plot"))
+        )
+      )
+    )
+    
   )
-)
+))
 
 
 # Define server function
@@ -1063,69 +1075,36 @@ server <- function(input, output, session) {
   
   
   # SERVER Tab 5: DRUG SENSITIVITY
-  
-  observe({
-    req(length(shared_data$uploaded) > 0)  # Ensure there's data to check
-    
-    drug_uploaded <- names(which(vapply(shared_data$uploaded, function(x) 
-      any(grepl("IC50|AUC|drug", names(x), ignore.case = TRUE)), 
-      logical(1))))
-    
-    updateSelectInput(session, "uploaded_drug_data", choices = drug_uploaded)
-  })
-  
-  
-  
   output$level1_ui <- renderUI({
-    req(input$group_var)
-    if (input$drug_data_source == "builtin") {
-      dataset <- get(datasets_drug[[input$dataset_choice]])
-    } else {
-      req(input$uploaded_drug_data)
-      dataset <- shared_data$uploaded[[input$uploaded_drug_data]]
-    }
+    req(input$dataset_choice, input$group_var)
+    dataset <- get(datasets_drug[[input$dataset_choice]])
     levels <- unique(dataset[[input$group_var]])
     selectInput("level1", "Select First Level:", choices = levels)
   })
   
+  # Generate UI for selecting the second level based on the first level
   output$level2_ui <- renderUI({
-    req(input$group_var, input$level1)
-    if (input$drug_data_source == "builtin") {
-      dataset <- get(datasets_drug[[input$dataset_choice]])
-    } else {
-      req(input$uploaded_drug_data)
-      dataset <- shared_data$uploaded[[input$uploaded_drug_data]]
-    }
+    req(input$dataset_choice, input$group_var, input$level1)
+    dataset <- get(datasets_drug[[input$dataset_choice]])
     levels <- setdiff(unique(dataset[[input$group_var]]), input$level1)
     selectInput("level2", "Select Second Level:", choices = levels)
   })
   
   observeEvent(input$run_test, {
-    req(input$group_var, input$level1, input$level2)
-    
-    if (input$drug_data_source == "builtin") {
-      dataset <- get(datasets_drug[[input$dataset_choice]])
-    } else {
-      req(input$uploaded_drug_data)
-      dataset <- shared_data$uploaded[[input$uploaded_drug_data]]
-    }
-    
-    # Fix filtering
+    req(input$dataset_choice, input$group_var, input$level1, input$level2)
+    dataset <- get(datasets_drug[[input$dataset_choice]])
+    # Filter the data based on the selected levels
     filtered_data <- dataset %>% 
-      filter(.data[[input$group_var]] %in% c(input$level1, input$level2))
+      filter(get(input$group_var) %in% c(input$level1, input$level2))
     
-    # Ensure IC50 column exists
-    req("IC50" %in% names(filtered_data))
+    # Perform the t-test based on the selected grouping variable
+    t_test_result <- t.test(IC50 ~ get(input$group_var), data = filtered_data)
     
-    # Fix t-test formula
-    t_test_result <- t.test(as.formula(paste("IC50 ~", input$group_var)), data = filtered_data)
-    
+    # Display the t-test result
     output$t_test_result <- renderPrint({
       t_test_result
     })
   })
-  
-  
   
   # SERVER Tab 6: RADIOGX ANALYSIS  
   
@@ -1350,6 +1329,79 @@ server <- function(input, output, session) {
   #output$research_report <- renderText({
   # text_content
   #})
+  # Dynamically create filters for specified columns
+  output$filters_ui <- renderUI({
+    lapply(filter_columns, function(col) {
+      if (is.numeric(filtered_data_initial[[col]])) {
+        sliderInput(
+          paste0("filter_", col), col,
+          min = min(filtered_data_initial[[col]], na.rm = TRUE),
+          max = max(filtered_data_initial[[col]], na.rm = TRUE),
+          value = c(min(filtered_data_initial[[col]], na.rm = TRUE), 
+                    max(filtered_data_initial[[col]], na.rm = TRUE))
+        )
+      } else {
+        checkboxGroupInput(
+          paste0("filter_", col), col,
+          choices = unique(filtered_data_initial[[col]]),
+          selected = unique(filtered_data_initial[[col]])
+        )
+      }
+    })
+  })
+  
+  # Reactive filtering of the dataset
+  filtered_data <- reactive({
+    data <- hip_fracture_data
+    for (col in filter_columns) {
+      filter_input <- input[[paste0("filter_", col)]]
+      if (!is.null(filter_input)) {
+        if (is.numeric(data[[col]])) {
+          data <- data %>% filter(data[[col]] >= filter_input[1] & data[[col]] <= filter_input[2])
+        } else {
+          data <- data %>% filter(data[[col]] %in% filter_input)
+        }
+      }
+    }
+    data
+  })
+  
+  # Render filtered data table
+  output$filtered_table <- renderDT({
+    datatable(filtered_data(), options = list(scrollX = TRUE))
+  })
+  
+  # Render dynamic plot
+  output$dynamic_plot <- renderPlot({
+    data <- filtered_data()
+    x_var <- input$x_var
+    y_var <- input$y_var
+    
+    if (input$plot_type == "Bar Plot") {
+      ggplot(data, aes_string(x = x_var)) +
+        geom_bar(fill = "skyblue", color = "black") +
+        theme_minimal() +
+        labs(title = "Bar Plot", x = x_var, y = "Count")
+    } else if (input$plot_type == "Scatter Plot" && y_var != "None") {
+      ggplot(data, aes_string(x = x_var, y = y_var)) +
+        geom_point(color = "blue") +
+        theme_minimal() +
+        labs(title = "Scatter Plot", x = x_var, y = y_var)
+    } else if (input$plot_type == "Box Plot" && y_var != "None") {
+      ggplot(data, aes_string(x = x_var, y = y_var)) +
+        geom_boxplot(fill = "lightblue", color = "black") +
+        theme_minimal() +
+        labs(title = "Box Plot", x = x_var, y = y_var)
+    } else if (input$plot_type == "Histogram" && is.numeric(filtered_data_initial[[x_var]])) {
+      ggplot(data, aes_string(x = x_var)) +
+        geom_histogram(binwidth = 5, fill = "skyblue", color = "black", alpha = 0.7) +
+        theme_minimal() +
+        labs(title = "Histogram", x = x_var, y = "Frequency")
+    } else {
+      ggplot() +
+        labs(title = "Select appropriate variables for the chosen plot type.")
+    }
+  })
 }
 
 
