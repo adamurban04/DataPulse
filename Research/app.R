@@ -1,5 +1,6 @@
 # ONCOEX SHINY APP
 
+
 # Load R packages
 library(shiny)  # Shiny App
 library(shinythemes)
@@ -17,18 +18,23 @@ library(RadioGx)
 library(PharmacoGx)
 
 
+
+
 # Read the TSV/CSV file for Datasets
+
 
 # https://www.cancerrxgene.org/downloads/drug_data?screening_set=GDSC1&tissue=LUAD
 drug_data <- read_csv("www/LUAD_IC_Sun_Jul_14_11_36_44_2024.csv", show_col_types = FALSE)
 # https://www.cancerrxgene.org/downloads/drug_data?screening_set=GDSC2&tissue=LUAD
 drug_data2 <- read_csv("www/LUAD_IC_Thu_Jul_18_13_08_48_2024.csv", show_col_types = FALSE)
 
+
 # List of drug datasets
 datasets_drug <- list(
   "GDSC1" = "drug_data",
   "GDSC2" = "drug_data2"
 )
+
 
 # https://www.cbioportal.org/study/clinicalData?id=luad_tcga_pan_can_atlas_2018
 luad_data1 <- read_tsv("www/luad_tcga_pan_can_atlas_2018_clinical_data.tsv", show_col_types = FALSE)
@@ -39,7 +45,28 @@ luad_data3 <- read_tsv("www/luad_tcga_firehose_legacy_clinical_data.tsv", show_c
 # https://www.cbioportal.org/study/clinicalData?id=luad_oncosg_2020
 luad_data4 <- read_tsv("www/luad_oncosg_2020_clinical_data.tsv", show_col_types = FALSE)
 
+
+# CHANGE TO:
+
+
+# CLINICAL TABULAR DATA
+# https://www.cbioportal.org/study/clinicalData?id=nsclc_tcga_broad_2016
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 datasets_clinical <- list("LUAD TCGA" = luad_data1, "NSCLC Radiomics" = nsclc_data2, "LUAD TCGA Firehose" = luad_data3, "LUAD OncoSG" = luad_data4)
+
 
 # Datasets of images
 datasets <- list(
@@ -48,11 +75,13 @@ datasets <- list(
   "NSCLC LUNG1-003" = "www/1.000000-NA-28595",
   "NSCLC LUNG1-004" = "www/1.000000-NA-61228")
 
+
 # Helper function to read JPG files
 read_jpg_files <- function(path) {
   files <- list.files(path, full.names = TRUE, pattern = "\\.jpg$")
   return(files)
 }
+
 
 # Helper Function to read and convert DICOM to PNG
 convert_dicom_to_png <- function(file_path, output_dir) {
@@ -78,6 +107,7 @@ convert_dicom_to_png <- function(file_path, output_dir) {
     stop("Image data is not in the correct format")
   }
 }
+
 
 # Helper Function to scan all DICOM files in a directory
 scan_dicom_files <- function(directory_path) {
@@ -106,94 +136,61 @@ scan_dicom_files <- function(directory_path) {
   }
 }
 
+
 # Define UI
 ui <- fluidPage(
   theme = shinytheme("yeti"),
   
-  
-  # HTML to style certain containers (cmnd+opt+L to fold)
   tags$head(tags$style(
-    HTML(
-      "
-                          .scrollable-table {
-                            overflow-x: auto;
-                            white-space: nowrap;
-                            width: 100%;
-                          }
-                          .scrollable-table table {
-                            width: 100%;
-                          }
-                          .summary-text-box {
-                            width: 100%;
-                            height: 350px;
-                            overflow-y: scroll;
-                            white-space: pre-wrap;
-                            word-wrap: break-word;
-                            border: 1px solid #ccc;
-                            padding: 20px;
-                            background-color: #f9f9f9;
-                          }
-                          .compact-container {
-                            margin: 0;
-                            padding: 10px;
-                          }
-                          .compact-select {
-                            margin-bottom: 10px;
-                          }
-                          .image-box {
-                            width: 512px;
-                            height: 512px;
-
-                          }
-                           .plot-container {
-                             margin-top: 20px;
-                             margin-bottom: 20px;
-                             padding: 10px;
-                             border: 1px solid #ddd;
-                             border-radius: 5px;
-                           }
-                           .image-container {
-
-                             display: flex;
-
-                             justify-content: center;
-
-                             align-items: center;
-
-                             width: 100%;
-
-                             height: auto;
-
-                             }
-
-                            .image-container img {
-
-                            max-width: 100%;
-
-                             height: auto;
-
-                            }
-                            .space-before-panel {
-                            margin-top: 50px;
-                            }
-                            .container-box {
-                            background-color: #f9f9f9;
-                            padding: 20px;
-                            border-radius: 10px;
-                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                            }
-                            .table1-output {
-                            width: 100%;
-                            overflow-x: auto;
-                            }
-      "
-    )
+    HTML("
+      .scrollable-table { overflow-x: auto; white-space: nowrap; width: 100%; }
+      .scrollable-table table { width: 100%; }
+      .summary-text-box { width: 100%; height: 350px; overflow-y: scroll; 
+                         white-space: pre-wrap; word-wrap: break-word; 
+                         border: 1px solid #ccc; padding: 20px; background-color: #f9f9f9; }
+      .compact-container { margin: 0; padding: 10px; }
+      .compact-select { margin-bottom: 10px; }
+      .image-box { width: 512px; h  eight: 512px; }
+      .plot-container { margin-top: 20px; margin-bottom: 20px; padding: 10px; 
+                       border: 1px solid #ddd; border-radius: 5px; }
+      .image-container { display: flex; justify-content: center; align-items: center; 
+                        width: 100%; height: auto; }
+      .image-container img { max-width: 100%; height: auto; }
+      .space-before-panel { margin-top: 50px; }
+      .container-box { background-color: #f9f9f9; padding: 20px; border-radius: 10px; 
+                      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+      .table1-output { width: 100%; overflow-x: auto; }
+    ")
   )),
   
-  # Navigation
   navbarPage(
     "OncoEx",
-    # UI Tab 1: DATA
+    tabPanel(
+      "UPLOAD DATA",
+      fluidRow(
+        h3("Upload Your Own Data", style = "background-color: #f0f0f0; color: #333; 
+           padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+        column(
+          12,
+          fileInput("file_upload", "Choose File(s)", 
+                    multiple = TRUE,
+                    accept = c(".csv", ".tsv", ".xls", ".xlsx", ".json")),
+          selectInput("upload_file_type", "File Type:",
+                      choices = c("Auto-detect" = "auto",
+                                  "CSV" = "csv", 
+                                  "TSV" = "tsv",
+                                  "Excel" = "excel",
+                                  "JSON" = "json")),
+          checkboxInput("header", "Header row", TRUE),
+          actionButton("load_uploaded", "Load Data", class = "btn-primary"),
+          hr(),
+          h4("Uploaded Datasets"),
+          DTOutput("uploaded_datasets_table")
+        )
+      )
+    ),
+    
+    # DATA OVERVIEW tab
     tabPanel(
       "DATA OVERVIEW",
       fluidRow(
@@ -209,7 +206,7 @@ ui <- fluidPage(
               choices = c("Tabular Data" = "tabular", "Image Data" = "image")
             )
           ),
-          # Tabular
+          
           conditionalPanel(
             condition = "input.data_choice == 'tabular'",
             selectInput(
@@ -225,7 +222,6 @@ ui <- fluidPage(
               )
             )
           ),
-          # Image
           conditionalPanel(
             condition = "input.data_choice == 'image'",
             selectInput(
@@ -308,7 +304,17 @@ ui <- fluidPage(
           h4("Number of Images: 52,073"),
           h4("Modality: CT/RT")
         )
+      ),
+      conditionalPanel(
+        condition = "input.data_choice == 'tabular' && input.data_choice_tabular.startsWith('uploaded_')",
+        h1("Uploaded Dataset"),
+        div(class = "scrollable-table", DTOutput("uploaded_data_display")),
+        div(class = "space-before-panel"),
+        h3("Summary in R", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+        div(class = "summary-text-box", verbatimTextOutput("uploaded_data_summary"))
       )
+      
+      
     ),
     
     # UI Tab 2: STRATIFIED ANALYSIS
@@ -316,24 +322,28 @@ ui <- fluidPage(
     tabPanel(
       "STRATIFIED ANALYSIS",
       fluidRow(
-        
         h3("Descriptive Statistics with table1 Package", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
-        selectInput('dataset_t1_choice', 'Select Dataset', choices = names(datasets_clinical)),
-        uiOutput("variable_select"), # Dynamic variable selection based on chosen dataset
-        
-        div(style = "border-color: #C0C0C0; border-width: 1px; border-style: solid; padding: 15px;",
-            h3(""),
-            div(class = "table1-output", tableOutput("T1"))
+        column(
+          12,
+          selectInput('dataset_t1_choice', 'Select Dataset', 
+                      choices = c(names(datasets_clinical))),
+          uiOutput("variable_select"),
+          conditionalPanel(
+            condition = "input.dataset_t1_choice.startsWith('uploaded_')",
+            uiOutput("uploaded_var_selector_t1")
+          ),
+          div(style = "border-color: #C0C0C0; border-width: 1px; border-style: solid; padding: 15px;",
+              h3(""),
+              div(class = "table1-output", tableOutput("T1"))
+          )
         )
-      )
-    ),
+      )),
     
     
-    # UI Tab 3: PLOTS
     tabPanel(
       "PLOTS",
       fluidRow(
-        h3("Data Visualisation with plotly Package", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+        h3("Data Visualization with plotly Package", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
         column(
           12,
           class = "compact-container",
@@ -342,113 +352,134 @@ ui <- fluidPage(
             radioButtons(
               inputId = "plot_data_choice_tabular",
               label = "Choose Dataset:",
-              choices = list(
+              choices = c(
                 "LUAD TCGA Pan Can Atlas 2018 Clinical Data" = "luad_data1",
                 "NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2",
                 "LUAD TCGA Firehose Legacy Clinical Data" = "luad_data3",
-                "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4"
+                "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4",
+                "Uploaded Data" = "uploaded_data"
               )
-            )
-          ),
-          
-          # LUAD Tabular 1
-          conditionalPanel(
-            condition = "input.plot_data_choice_tabular == 'luad_data1'",
-            radioButtons(
-              inputId = "plot_choice_tabular1",
-              label = "Choose Plot:",
-              choices = list(
-                "Age" = "age",
-                "Sex" = "sex",
-                "Race" = "race",
-                "Ethnicity" = "ethnicity"
+            ),
+            
+            # Dynamic UI for built-in datasets
+            conditionalPanel(
+              condition = "input.plot_data_choice_tabular != 'uploaded_data'",
+              uiOutput("builtin_var_selector"),
+              selectInput(
+                "plot_type_tabular",
+                "Plot Type:",
+                choices = c("Histogram", "Boxplot", "Scatter", "Bar Chart")
+              ),
+              conditionalPanel(
+                condition = "input.plot_type_tabular == 'Scatter'",
+                uiOutput("scatter_yvar_selector")
               )
-            )
-          ),
-          # NSCLC Tabular 2
-          conditionalPanel(
-            condition = "input.plot_data_choice_tabular == 'nsclc_data2'",
-            radioButtons(
-              inputId = "plot_choice_tabular2",
-              label = "Choose Plot:",
-              choices = list("Age" = "age2", "Sex" = "sex2")
-            )
-          ),
-          # LUAD Tabular 3
-          conditionalPanel(
-            condition = "input.plot_data_choice_tabular == 'luad_data3'",
-            radioButtons(
-              inputId = "plot_choice_tabular3",
-              label = "Choose Plot:",
-              choices = list(
-                "Age" = "age3",
-                "Sex" = "sex3",
-                "Race" = "race3",
-                "Ethnicity" = "ethnicity3"
+            ),
+            
+            # Dynamic UI for uploaded data
+            conditionalPanel(
+              condition = "input.plot_data_choice_tabular == 'uploaded_data'",
+              selectInput(
+                "uploaded_data_plot", 
+                "Select Uploaded Dataset:",
+                choices = NULL
+              ),
+              uiOutput("uploaded_var_selector"),
+              selectInput(
+                "uploaded_plot_type",
+                "Plot Type:",
+                choices = c("Histogram", "Boxplot", "Scatter", "Bar Chart")
+              ),
+              conditionalPanel(
+                condition = "input.uploaded_plot_type == 'Scatter'",
+                uiOutput("uploaded_scatter_yvar_selector")
               )
-            )
-          ),
-          
-          # LUAD Tabular 4
-          conditionalPanel(
-            condition = "input.plot_data_choice_tabular == 'luad_data4'",
-            radioButtons(
-              inputId = "plot_choice_tabular4",
-              label = "Choose Plot:",
-              choices = list(
-                "Age" = "age4",
-                "Sex" = "sex4",
-                "Ethnicity" = "ethnicity4"
-              )
-            )
-          ),
-          
-          plotlyOutput(outputId = "dynamic_plot")
-          
-        ),
-      ),
-      column(12, class = "compact-container", div(class = "compact-select", htmlOutput("total_samples")))
+            ),
+            
+            # Main plot output
+            plotlyOutput(outputId = "dynamic_plot", height = "600px")
+          )
+        )
+      )
     ),
     
-    # UI Tab 4: CORRELATION MATRIX
-    tabPanel("CORRELATION MATRIX", fluidRow(
-      h3("Correlation Matrix with corrPlot package", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
-      column(
-        12,
-        class = "compact-container",
-        div(
-          class = "compact-select",
-          radioButtons(
-          inputId = "cor_matrix_choice",
-          label = "Choose Dataset:",
-          choices = list(
-            "LUAD TCGA Pan Can Atlas 2018 Clinical Data" = "luad_data1",
-            "NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2",
-            "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4"
-          ))
-        ),
-        class = "compact-select",
-        plotOutput("corrPlot", width = "800px", height = "800px")
-      ),
-    )),
+    
+    
+    
+    # CORRELATION MATRIX tab - add option for uploaded data
+    tabPanel(
+      "CORRELATION MATRIX", 
+      fluidRow(
+        h3("Correlation Matrix with corrplot Package", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+        column(
+          12,
+          class = "compact-container",
+          div(
+            class = "compact-select",
+            radioButtons(
+              inputId = "cor_matrix_choice",
+              label = "Choose Dataset:",
+              choices = c(
+                "LUAD TCGA Pan Can Atlas 2018 Clinical Data" = "luad_data1",
+                "NSCLC-Radiomics Lung1 Clinical Data" = "nsclc_data2", 
+                "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4",
+                "Uploaded Data" = "uploaded_data"
+              )
+            ),
+            conditionalPanel(
+              condition = "input.cor_matrix_choice == 'uploaded_data'",
+              selectInput(
+                "uploaded_cor_data",
+                "Select Uploaded Dataset:",
+                choices = NULL
+              ),
+              sliderInput(
+                "cor_threshold",
+                "Minimum Correlation Threshold:",
+                min = 0, max = 1, value = 0.3, step = 0.1
+              )
+            )
+          ),
+          plotOutput("corrPlot", width = "800px", height = "800px")
+        )
+      )
+    ),
     
     # UI Tab 5: DRUG SENSITIVITY
-    tabPanel("DRUG SENSITIVITY", fluidRow(
-      h3("Drug Sensitivity T-test Analysis", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
-      sidebarLayout(
-        sidebarPanel(
-          selectInput("dataset_choice", "Select Dataset:", choices = names(datasets_drug)),
-          # The datasets in the app are only lung_NSCLC_adenocarcinoma "Tissue Sub-type"
-          selectInput("group_var", "Select Grouping Variable:", choices = c("Drug Name", "Cell Line Name", "Tissue Sub-type")),
-          uiOutput("level1_ui"),
-          uiOutput("level2_ui"),
-          actionButton("run_test", "Run T-test")
-        ),
-        mainPanel(
-          verbatimTextOutput("t_test_result")
+    # DRUG SENSITIVITY tab with uploaded data support
+    tabPanel(
+      "DRUG SENSITIVITY",
+      fluidRow(
+        h3("Drug Sensitivity T-test Analysis", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+        sidebarLayout(
+          sidebarPanel(
+            radioButtons(
+              "drug_data_source",
+              "Data Source:",
+              choices = c("Built-in GDSC Data" = "builtin",
+                          "Uploaded Drug Data" = "uploaded")
+            ),
+            conditionalPanel(
+              condition = "input.drug_data_source == 'builtin'",
+              selectInput("dataset_choice", "Select Dataset:", choices = names(datasets_drug))
+            ),
+            conditionalPanel(
+              condition = "input.drug_data_source == 'uploaded'",
+              selectInput("uploaded_drug_data", "Select Dataset:", choices = NULL)
+            ),
+            selectInput("group_var", "Select Grouping Variable:", 
+                        choices = c("Drug Name", "Cell Line Name", "Tissue Sub-type")),
+            uiOutput("level1_ui"),
+            uiOutput("level2_ui"),
+            actionButton("run_test", "Run T-test", class = "btn-primary")
+          ),
+          mainPanel(
+            verbatimTextOutput("t_test_result")
+          )
         )
-      ))
+      )
     ),
+    
     
     # UI Tab 6: RADIOGENOMIC ANALYSIS
     tabPanel("RADIOGX ANALYSIS", fluidRow(
@@ -533,16 +564,194 @@ ui <- fluidPage(
     #,
     # UI Tab 9: REPORT
     #tabPanel("REPORT", 
-             #h3("Research Report", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
-             #mainPanel(includeMarkdown("www/Report.md")))
+    #h3("Research Report", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
+    #mainPanel(includeMarkdown("www/Report.md")))
     
   )
 )
 
+
 # Define server function
 server <- function(input, output, session) {
   
-  # SERVER Tab 1: DATA OVERVIEW
+  # Reactive value to store uploaded datasets
+  shared_data <- reactiveValues(
+    uploaded = list(),
+    uploaded_names = character(0),
+    combined = list(
+      clinical = NULL,
+      drug = NULL,
+      image = NULL
+    )
+  )
+  
+  # Observer for uploaded data
+  observeEvent(input$load_uploaded, {
+    req(input$file_upload)
+    
+    tryCatch({
+      files <- input$file_upload
+      for (i in seq_along(files$datapath)) {
+        df_name <- tools::file_path_sans_ext(files$name[i])
+        
+        # Determine file type
+        file_type <- if (input$upload_file_type == "auto") {
+          tolower(tools::file_ext(files$name[i]))
+        } else {
+          input$upload_file_type
+        }
+        
+        # Read data based on file type
+        data <- switch(file_type,
+                       "csv" = read_csv(files$datapath[i], show_col_types = FALSE, col_names = input$header),
+                       "tsv" = read_tsv(files$datapath[i], show_col_types = FALSE, col_names = input$header),
+                       "xls" = readxl::read_excel(files$datapath[i], col_names = input$header),
+                       "xlsx" = readxl::read_excel(files$datapath[i], col_names = input$header),
+                       "json" = jsonlite::fromJSON(files$datapath[i]),
+                       read.csv(files$datapath[i], header = input$header)
+        )
+        
+        # Store with uploaded_ prefix
+        uploaded_name <- paste0("uploaded_", df_name)
+        shared_data$uploaded[[uploaded_name]] <- data
+        shared_data$uploaded_names <- c(shared_data$uploaded_names, df_name)
+        
+        # Classify data type
+        if (any(grepl("IC50|AUC|drug", names(data), ignore.case = TRUE))) {
+          shared_data$combined$drug <- if (is.null(shared_data$combined$drug)) {
+            data
+          } else {
+            bind_rows(shared_data$combined$drug, data)
+          }
+        } else if (any(grepl("patient|diagnosis|clinical", names(data), ignore.case = TRUE))) {
+          shared_data$combined$clinical <- if (is.null(shared_data$combined$clinical)) {
+            data
+          } else {
+            bind_rows(shared_data$combined$clinical, data)
+          }
+        }
+      }
+      
+      # Update all select inputs
+      updateSelectInput(session, "data_choice_tabular", 
+                        choices = c(
+                          "LUAD TCGA Pan Can Atlas 2018" = "luad_data1",
+                          "NSCLC-Radiomics Lung1" = "nsclc_data2",
+                          "LUAD TCGA Firehose Legacy" = "luad_data3",
+                          "LUAD (OncoSG, Nat Genet 2020)" = "luad_data4",
+                          "GDSC1" = "drug_data",
+                          "GDSC2" = "drug_data2",
+                          setNames(paste0("uploaded_", shared_data$uploaded_names), 
+                                   shared_data$uploaded_names)
+                        ))
+      
+      updateSelectInput(session, "dataset_t1_choice", 
+                        choices = c(
+                          names(datasets_clinical),
+                          setNames(paste0("uploaded_", shared_data$uploaded_names), 
+                                   shared_data$uploaded_names)
+                        ))
+      
+      showNotification("Data uploaded successfully!", type = "message")
+      
+    }, error = function(e) {
+      showNotification(paste("Error:", e$message), type = "error")
+    })
+  })
+  
+  # Display uploaded datasets table
+  # Server logic for uploaded datasets
+
+  output$uploaded_data_display <- renderDT({
+
+    req(input$data_choice_tabular)
+
+    
+
+    # Get the dataset name from the selected choice
+
+    selected_data_name <- input$data_choice_tabular
+
+    
+
+    # If the selected dataset starts with "uploaded_", get the dataset from shared_data
+
+    if (startsWith(selected_data_name, "uploaded_")) {
+
+      data <- shared_data$uploaded[[selected_data_name]]
+
+      
+
+      datatable(data, options = list(scrollX = TRUE, lengthMenu = list(
+
+        c(10, 25, 50, -1), c('10', '25', '50', 'All')
+
+      )))
+
+    }
+
+  }, server = TRUE)
+
+  
+
+  # Summary for the uploaded dataset
+
+  output$uploaded_data_summary <- renderPrint({
+
+    req(input$data_choice_tabular)
+
+    
+
+    # Get the dataset name from the selected choice
+
+    selected_data_name <- input$data_choice_tabular
+
+    
+
+    # If the selected dataset starts with "uploaded_", get the dataset from shared_data
+
+    if (startsWith(selected_data_name, "uploaded_")) {
+
+      data <- shared_data$uploaded[[selected_data_name]]
+
+      summary(data)
+
+    }
+
+  })
+  
+  output$uploaded_datasets_table <- renderDT({
+    
+    req(length(shared_data$uploaded) > 0)
+    
+    data.frame(
+      
+      Dataset = shared_data$uploaded_names,
+      
+      Rows = sapply(shared_data$uploaded, nrow),
+      
+      Columns = sapply(shared_data$uploaded, ncol),
+      
+      Type = sapply(shared_data$uploaded, function(x) {
+        
+        if (any(grepl("IC50|AUC|drug", names(x), ignore.case = TRUE))) "Drug Sensitivity" else
+          
+          if (any(grepl("patient|diagnosis|clinical", names(x), ignore.case = TRUE))) "Clinical" else
+            
+            "Other"
+        
+      }),
+      
+      stringsAsFactors = FALSE
+      
+    )
+    
+  }, options = list(pageLength = 5, scrollX = TRUE))
+
+  
+  
+  
+  
   
   # List of data frames
   data_list <- list(luad_data1, nsclc_data2, luad_data3, luad_data4, drug_data, drug_data2)
@@ -580,10 +789,17 @@ server <- function(input, output, session) {
   # Table1 Descriptive Statistics
   # (general statistics and stratified analysis by a grouping variable)
   
-  # Reactive expression to get selected dataset
+  # Reactive expression to get selected dataset (preset or uploaded)
   selected_data_t1 <- reactive({
-    datasets_clinical[[input$dataset_t1_choice]]
+    if (startsWith(input$dataset_t1_choice, "uploaded_")) {
+      # Handle uploaded datasets
+      shared_data$uploaded[[input$dataset_t1_choice]]
+    } else {
+      # Handle preset datasets
+      datasets_clinical[[input$dataset_t1_choice]]
+    }
   })
+  
   
   # Dynamic UI for selecting variable based on selected dataset
   output$variable_select <- renderUI({
@@ -596,6 +812,7 @@ server <- function(input, output, session) {
     cat_vars <- setdiff(column_names, c("PatientID", "Patient ID", "Sample ID"))
     selectInput('cat_var', 'Variable', choices = cat_vars)
   })
+  
   
   # Reactive expression to filter data based on selected group
   filtered_data_t1 <- reactive({
@@ -620,7 +837,7 @@ server <- function(input, output, session) {
     }
   })
   
-  # Render the table
+  # Render the table for stratified analysis
   output$T1 <- renderTable({
     data_t1 <- filtered_data_t1()
     
@@ -634,358 +851,280 @@ server <- function(input, output, session) {
   })
   
   
+  
   # SERVER Tab 3: PLOTS
+  # PLOTS tab server logic
   
-  # Reactive expression to filter data based on plot choice
-  filtered_data <- reactive({
-    if (input$plot_data_choice_tabular == "luad_data1") {
-      switch(
-        input$plot_choice_tabular1,
-        "age" = luad_data1 %>% filter(!is.na(`Diagnosis Age`)),
-        "sex" = luad_data1 %>% filter(!is.na(Sex)),
-        "race" = luad_data1 %>% filter(!is.na(`Race Category`)),
-        "ethnicity" = luad_data1 %>% filter(!is.na(`Ethnicity Category`))
-      )
-    } else if (input$plot_data_choice_tabular == "nsclc_data2") {
-      switch(
-        input$plot_choice_tabular2,
-        "age2" = nsclc_data2 %>% filter(!is.na(age)),
-        "sex2" = nsclc_data2 %>% filter(!is.na(gender))
-      )
-    } else if (input$plot_data_choice_tabular == "luad_data3") {
-      switch(
-        input$plot_choice_tabular3,
-        "age3" = luad_data3 %>% filter(!is.na(`Diagnosis Age`)),
-        "sex3" = luad_data3 %>% filter(!is.na(Sex)),
-        "race3" = luad_data3 %>% filter(!is.na(`Race Category`)),
-        "ethnicity3" = luad_data3 %>% filter(!is.na(`Ethnicity Category`))
-      )
-    } else if (input$plot_data_choice_tabular == "luad_data4") {
-      switch(
-        input$plot_choice_tabular4,
-        "age4" = luad_data4 %>% filter(!is.na(Age)),
-        "sex4" = luad_data4 %>% filter(!is.na(Sex)),
-        "ethnicity4" = luad_data4 %>% filter(!is.na(`Ethnicity Category`))
-      )
-    }
+  # Update uploaded data choices
+  observe({
+    updateSelectInput(session, "uploaded_data_plot", 
+                      choices = shared_data$uploaded_names)
   })
   
-  # Plot Output
+  # Variable selector for built-in datasets
+  output$builtin_var_selector <- renderUI({
+    req(input$plot_data_choice_tabular)
+    
+    data <- switch(input$plot_data_choice_tabular,
+                   "luad_data1" = luad_data1,
+                   "nsclc_data2" = nsclc_data2,
+                   "luad_data3" = luad_data3,
+                   "luad_data4" = luad_data4)
+    
+    selectInput(
+      "plot_choice_tabular_dynamic",
+      "Choose Variable:",
+      choices = names(data)
+    )
+  })
   
+  # Y variable selector for scatter plots (built-in)
+  output$scatter_yvar_selector <- renderUI({
+    req(input$plot_data_choice_tabular, input$plot_choice_tabular_dynamic)
+    
+    data <- switch(input$plot_data_choice_tabular,
+                   "luad_data1" = luad_data1,
+                   "nsclc_data2" = nsclc_data2,
+                   "luad_data3" = luad_data3,
+                   "luad_data4" = luad_data4)
+    
+    available_vars <- setdiff(names(data), input$plot_choice_tabular_dynamic)
+    
+    selectInput(
+      "scatter_yvar",
+      "Select Y Variable:",
+      choices = available_vars
+    )
+  })
+  
+  # Variable selector for uploaded data
+  output$uploaded_var_selector <- renderUI({
+    req(input$uploaded_data_plot)
+    
+    data <- shared_data$uploaded[[paste0("uploaded_", input$uploaded_data_plot)]]
+    selectInput(
+      "uploaded_plot_var",
+      "Select Variable:",
+      choices = names(data)
+    )
+  })
+  
+  # Y variable selector for scatter plots (uploaded)
+  output$uploaded_scatter_yvar_selector <- renderUI({
+    req(input$uploaded_data_plot, input$uploaded_plot_var)
+    
+    data <- shared_data$uploaded[[paste0("uploaded_", input$uploaded_data_plot)]]
+    available_vars <- setdiff(names(data), input$uploaded_plot_var)
+    
+    selectInput(
+      "uploaded_scatter_yvar",
+      "Select Y Variable:",
+      choices = available_vars
+    )
+  })
+  
+  # Main plot rendering function
   output$dynamic_plot <- renderPlotly({
-    # Get the filtered data
-    filt_data <- filtered_data()
-    
-    plot <- NULL
-    if (input$plot_data_choice_tabular == "luad_data1") {
-      plot <- switch(
-        input$plot_choice_tabular1,
-        "age" = {
-          ggplot(filt_data, aes(x = `Diagnosis Age`)) +
-            geom_bar(fill = "skyblue",  color = "black") +
-            labs(title = "Distribution of Diagnosis Age",
-                 x = "Age", y = "Count")
-        },
-        "sex" = {
-          sex_counts <- filt_data %>%
-            group_by(Sex) %>%
-            summarize(n = n()) %>%
-            as.data.frame()
-          plot_ly(sex_counts, labels = ~Sex, values = ~n, type = 'pie', 
-                  textinfo = 'label+percent', insidetextorientation = 'radial',
-                  marker = list(colors = c('pink', 'skyblue'))) %>%
-            layout(title = list(text = "Male/Female Diagnosed Ratio", font = list(size = 20)),
-                   font = list(size = 18),
-                   margin = list(t = 80))
-          
-          
-        },
-        "race" = {
-          race_counts <- filt_data %>%
-            group_by(`Race Category`) %>%
-            summarize(n = n()) %>%
-            as.data.frame()
-          
-          # Define a palette of colors for the pie chart
-          colors <- c('skyblue', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
-          
-          plot_ly(race_counts, labels = ~`Race Category`, values = ~n, type = 'pie', 
-                  textinfo = 'label+percent', textposition = 'outside', 
-                  hoverinfo = 'label+value',
-                  marker = list(colors = colors, 
-                                line = list(color = '#000000', width = 1)),
-                  textfont = list(color = colors)) %>%
-            layout(title = list(text = 'Race Category Diagnosed Ratio', font = list(size = 20)),
-                   showlegend = TRUE, 
-                   legend = list(x = 1, y = 0.5),
-                   margin = list(l = 20, r = 20, t = 80, b = 20),
-                   font = list(size = 15),
-                   uniformtext = list(minsize = 10, mode = 'show'))
-          
-          
-        },
-        "ethnicity" = {
-          ethnicity_counts <- filt_data %>%
-            group_by(`Ethnicity Category`) %>%
-            summarize(n = n()) %>%
-            as.data.frame()
-          
-          colors <- c('#e5c787', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
-          plot_ly(ethnicity_counts, labels = ~`Ethnicity Category`, values = ~n, type = 'pie',
-                  textinfo = 'label+percent', textposition = 'outside', 
-                  hoverinfo = 'label+value',
-                  marker = list(colors = colors, 
-                                line = list(color = '#000000', width = 1)),
-                  textfont = list(color = colors)) %>%
-            layout(title = list(text = 'Ethnicity Category Diagnosed Ratio', font = list(size = 20)),
-                   showlegend = TRUE, 
-                   legend = list(x = 1, y = 0.5),
-                   margin = list(l = 20, r = 20, t = 80, b = 50),
-                   font = list(size = 15),
-                   uniformtext = list(minsize = 10, mode = 'show'))
-        }
-      )
-    } else if (input$plot_data_choice_tabular == "nsclc_data2") {
-      plot <- switch(
-        input$plot_choice_tabular2,
-        "age2" = {
-          ggplot(filt_data, aes(x = age)) +
-            geom_histogram(binwidth = 1, fill = "skyblue", color = "black") +
-            labs(title = "Distribution of Diagnosis Age", x = "Age", y = "Count")
-        },
-        "sex2" = {
-          sex_counts <- filt_data %>%
-            group_by(gender) %>%
-            summarize(n = n()) %>%
-            as.data.frame()
-          
-          plot_ly(sex_counts, labels = ~gender, values = ~n, type = 'pie', 
-                  textinfo = 'label+percent', insidetextorientation = 'radial',
-                  marker = list(colors = c('pink', 'skyblue'))) %>%
-            layout(title = list(text = "Male/Female Diagnosed Ratio", font = list(size = 20)),
-                   font = list(size = 18),
-                   margin = list(t = 80))
-        }
-      )
-    } else if (input$plot_data_choice_tabular == "luad_data3") {
-      plot <- switch(
-        input$plot_choice_tabular3,
-        "age3" = {
-          ggplot(filt_data, aes(x = `Diagnosis Age`)) +
-            geom_bar(fill = "skyblue",  color = "black") +
-            labs(title = "Distribution of Diagnosis Age", x = "Age", y = "Count")
-        },
-        "sex3" = {
-          sex_counts <- filt_data %>%
-            group_by(Sex) %>%
-            summarize(n = n()) %>%
-            as.data.frame()
-          
-          plot_ly(sex_counts, labels = ~Sex, values = ~n, type = 'pie', 
-                  textinfo = 'label+percent', insidetextorientation = 'radial',
-                  marker = list(colors = c('pink', 'skyblue'))) %>%
-            layout(title = list(text = "Male/Female Diagnosed Ratio", font = list(size = 20)),
-                   font = list(size = 18),
-                   margin = list(t = 80))
-        },
-        "race3" = {
-          race_counts <- filt_data %>%
-            group_by(`Race Category`) %>%
-            summarize(n = n()) %>%
-            as.data.frame()
-          
-          # Define a palette of colors for the pie chart
-          colors <- c('skyblue', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
-          
-          plot_ly(race_counts, labels = ~`Race Category`, values = ~n, type = 'pie', 
-                  textinfo = 'label+percent', textposition = 'outside', 
-                  hoverinfo = 'label+value',
-                  marker = list(colors = colors, 
-                                line = list(color = '#000000', width = 1)),
-                  textfont = list(color = colors)) %>%
-            layout(title = list(text = 'Race Category Diagnosed Ratio', font = list(size = 20)),
-                   showlegend = TRUE, 
-                   legend = list(x = 1, y = 0.5),
-                   margin = list(l = 20, r = 20, t = 80, b = 20),
-                   font = list(size = 15),
-                   uniformtext = list(minsize = 10, mode = 'show'))
-        },
-        "ethnicity3" = {
-          ethnicity_counts <- filt_data %>%
-            group_by(`Ethnicity Category`) %>%
-            summarize(n = n()) %>%
-            as.data.frame()
-          
-          colors <- c('#e5c787', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
-          plot_ly(ethnicity_counts, labels = ~`Ethnicity Category`, values = ~n, type = 'pie',
-                  textinfo = 'label+percent', textposition = 'outside', 
-                  hoverinfo = 'label+value',
-                  marker = list(colors = colors, 
-                                line = list(color = '#000000', width = 1)),
-                  textfont = list(color = colors)) %>%
-            layout(title = list(text = 'Ethnicity Category Diagnosed Ratio', font = list(size = 20)),
-                   showlegend = TRUE, 
-                   legend = list(x = 1, y = 0.5),
-                   margin = list(l = 20, r = 20, t = 80, b = 50),
-                   font = list(size = 15),
-                   uniformtext = list(minsize = 10, mode = 'show'))
-        }
-      )
-    } else if (input$plot_data_choice_tabular == "luad_data4") {
-      plot <- switch(
-        input$plot_choice_tabular4,
-        "age4" = {
-          ggplot(filt_data, aes(x = Age)) +
-            geom_bar(fill = "skyblue",  color = "black") +
-            labs(title = "Distribution of Diagnosis Age", x = "Age", y = "Count")
-        },
-        "sex4" = {
-          sex_counts <- filt_data %>%
-            group_by(Sex) %>%
-            summarize(n = n()) %>%
-            as.data.frame()
-          
-          plot_ly(sex_counts, labels = ~Sex, values = ~n, type = 'pie', 
-                  textinfo = 'label+percent', insidetextorientation = 'radial',
-                  marker = list(colors = c('pink', 'skyblue'))) %>%
-            layout(title = list(text = "Male/Female Diagnosed Ratio", font = list(size = 20)),
-                   font = list(size = 18),
-                   margin = list(t = 80))
-        },
-        "ethnicity4" = {
-          ethnicity_counts <- filt_data %>%
-            group_by(`Ethnicity Category`) %>%
-            summarize(n = n()) %>%
-            as.data.frame()
-          
-          colors <- c('#e5c787', '#fcad65', '#b7999c', '#cbc1b4', '#d62728', '#2ca02c', '#9467bd', '#e377c2', '#bcbd22', '#17becf')
-          plot_ly(ethnicity_counts, labels = ~`Ethnicity Category`, values = ~n, type = 'pie',
-                  textinfo = 'label+percent', textposition = 'outside', 
-                  hoverinfo = 'label+value',
-                  marker = list(colors = colors, 
-                                line = list(color = '#000000', width = 1)),
-                  textfont = list(color = colors)) %>%
-            layout(title = list(text = 'Ethnicity Category Diagnosed Ratio', font = list(size = 20)),
-                   showlegend = TRUE, 
-                   legend = list(x = 1, y = 0.5),
-                   margin = list(l = 20, r = 20, t = 80, b = 50),
-                   font = list(size = 15),
-                   uniformtext = list(minsize = 10, mode = 'show'))
-        }
-      )
-    }
-    
-    plot
-  })
-  
-  
-  total_samples <- reactive({
-    dataset_choice <- switch(
-      input$plot_data_choice_tabular,
-      "luad_data1" = nrow(luad_data1),
-      "nsclc_data2" = nrow(nsclc_data2),
-      "luad_data3" = nrow(luad_data3),
-      "luad_data4" = nrow(luad_data4)
-    )
-    dataset_choice
-  })
-  
-  # Output the total samples
-  output$total_samples <- renderText({
-    paste(
-      "Total samples in selected dataset:", total_samples(), "<br>",
-      "Total filtered samples in selected dataset:", nrow(filtered_data())
-    )
-  })
-  
-  # SERVER Tab 4: CORRELATION MATRIX
-  
-  # (Diagnosis Age: Has a negative correlation with variables such as Overall Survival (Months) and Progress Free Survival (Months), indicating that older patients may have poorer outcomes
-  
-  # Select numeric columns for correlation analysis
-  
-  numeric_data <- reactive({
-    selected_data <- switch(
-      input$cor_matrix_choice,
-      "luad_data1" = luad_data1 %>% select_if(is.numeric) %>% na.omit(),
-      "nsclc_data2" = nsclc_data2 %>% select_if(is.numeric) %>% na.omit(),
-      "luad_data4" = luad_data4 %>% select_if(is.numeric) %>% na.omit())
-    
-    # Check for columns with zero variance and remove them
-    selected_data <- selected_data[, apply(selected_data, 2, function(x) var(x) != 0)]
-    return(selected_data)
-  })
-  
-  
-  
-  
-  # Define the reactive expression for selected columns
-  selected_columns <- reactive({
-    # Use switch to select the dataset based on user input
-    switch(
-      input$cor_matrix_choice,
-      "luad_data1" = numeric_data()[, c("Diagnosis Age", "Mutation Count", "Overall Survival (Months)")],
-      "nsclc_data2" = numeric_data()[, c("age", "Survival.time", "deadstatus.event")],
-      "luad_data4" = numeric_data()[, c("Age", "Mutation Count", "Overall survival months", "Person Cigarette Smoking History Pack Year Value")]
-    )
-  })
-  
-  # Render the correlation plot
-  output$corrPlot <- renderPlot({
-    # Check if there are more than one numeric columns
-    if (ncol(selected_columns()) > 1) {
-      # Calculate the correlation matrix
-      cor_matrix <- cor(selected_columns(), use = "complete.obs")
-      # Set the margins for the plot
-      par(mar = c(2, 2, 1, 1))
-      # Plot the correlation matrix
-      corrplot(cor_matrix, method = "color", tl.cex = 1.4,
-               diag = FALSE,
-               type = "upper",
-               col = colorRampPalette(c("blue", "white", "red"))(100),
-               number.cex = 0.7, tl.col = "black")
+    # Get the appropriate dataset
+    data <- if (input$plot_data_choice_tabular == "uploaded_data") {
+      req(input$uploaded_data_plot, input$uploaded_plot_var)
+      shared_data$uploaded[[paste0("uploaded_", input$uploaded_data_plot)]]
     } else {
-      # Display a message if not enough numeric columns are present
-      plot.new()
-      text(0.5, 0.5, "Not enough numeric columns for correlation analysis.")
+      switch(input$plot_data_choice_tabular,
+             "luad_data1" = luad_data1,
+             "nsclc_data2" = nsclc_data2,
+             "luad_data3" = luad_data3,
+             "luad_data4" = luad_data4)
+    }
+    
+    # Get plot parameters
+    if (input$plot_data_choice_tabular == "uploaded_data") {
+      xvar <- input$uploaded_plot_var
+      plot_type <- input$uploaded_plot_type
+      yvar <- if (plot_type == "Scatter") input$uploaded_scatter_yvar else NULL
+    } else {
+      xvar <- input$plot_choice_tabular_dynamic
+      plot_type <- input$plot_type_tabular
+      yvar <- if (plot_type == "Scatter") input$scatter_yvar else NULL
+    }
+    
+    # Filter NA values for relevant variables
+    data <- data %>% filter(!is.na(get(xvar)))
+    if (!is.null(yvar)) {
+      data <- data %>% filter(!is.na(get(yvar)))
+    }
+    
+    # Create plot based on type
+    p <- switch(plot_type,
+                "Histogram" = {
+                  plot_ly(data, x = ~get(xvar), type = "histogram",
+                          marker = list(color = '#4E79A7')) %>%
+                    layout(xaxis = list(title = xvar),
+                           yaxis = list(title = "Count"),
+                           title = paste("Distribution of", xvar))
+                },
+                "Boxplot" = {
+                  plot_ly(data, y = ~get(xvar), type = "box",
+                          marker = list(color = '#E15759'),
+                          line = list(color = '#E15759')) %>%
+                    layout(yaxis = list(title = xvar),
+                           title = paste("Boxplot of", xvar))
+                },
+                "Bar Chart" = {
+                  counts <- data %>%
+                    dplyr::count(!!sym(xvar)) %>%
+                    as.data.frame() %>%  # Ensure counts is a data frame
+                    dplyr::rename(Category = 1, Count = n)
+                  
+                  plot_ly(counts, x = ~Category, y = ~Count, type = "bar",
+                          marker = list(color = '#59A14F')) %>%
+                    layout(xaxis = list(title = xvar),
+                           yaxis = list(title = "Count"),
+                           title = paste("Frequency of", xvar))
+                },
+                
+                "Scatter" = {
+                  req(yvar)
+                  plot_ly(data, 
+                          x = ~get(xvar), 
+                          y = ~get(yvar),
+                          type = "scatter",
+                          mode = "markers",
+                          marker = list(size = 8, opacity = 0.7, color = '#76B7B2'),
+                          text = ~paste(xvar, ": ", get(xvar), "<br>", yvar, ": ", get(yvar)),
+                          hoverinfo = 'text') %>%
+                    layout(xaxis = list(title = xvar),
+                           yaxis = list(title = yvar),
+                           title = paste(yvar, "vs", xvar))
+                }
+    )
+    
+    # Add some common styling
+    p %>% layout(margin = list(l = 50, r = 50, b = 50, t = 50, pad = 4),
+                 font = list(family = "Arial"))
+  })
+  # Server continuation for correlation matrix
+  observe({
+    updateSelectInput(
+      session,
+      "uploaded_cor_data",
+      choices = shared_data$uploaded_names
+    )
+  })
+  
+  # Correlation matrix data preparation
+  corr_data <- reactive({
+    if (input$cor_matrix_choice == "uploaded_data") {
+      req(input$uploaded_cor_data)
+      dataset <- shared_data$uploaded[[paste0("uploaded_", input$uploaded_cor_data)]]
+      
+      # Select only numeric columns
+      num_data <- dataset %>% select_if(is.numeric)
+      
+      # Remove columns with zero variance
+      num_data[, apply(num_data, 2, function(x) var(x, na.rm = TRUE) > 0)]
+    } else {
+      # Original logic for built-in datasets
+      switch(input$cor_matrix_choice,
+             "luad_data1" = luad_data1 %>% select_if(is.numeric),
+             "nsclc_data2" = nsclc_data2 %>% select_if(is.numeric),
+             "luad_data4" = luad_data4 %>% select_if(is.numeric))
     }
   })
   
+  # Correlation matrix plot
+  output$corrPlot <- renderPlot({
+    data <- corr_data()
+    req(ncol(data) > 1)  # Need at least 2 columns for correlation
+    
+    # Calculate correlation matrix
+    cor_mat <- cor(data, use = "complete.obs")
+    
+    # Apply threshold if uploaded data
+    if (input$cor_matrix_choice == "uploaded_data") {
+      cor_mat[abs(cor_mat) < input$cor_threshold] <- 0
+    }
+    
+    # Create correlation plot
+    corrplot(cor_mat,
+             method = "color",
+             type = "upper",
+             tl.col = "black",
+             tl.cex = 0.8,
+             addCoef.col = "black",
+             number.cex = 0.7,
+             diag = FALSE,
+             cl.ratio = 0.2,
+             mar = c(0, 0, 1, 0),
+             title = ifelse(input$cor_matrix_choice == "uploaded_data",
+                            paste("Correlation Matrix for", input$uploaded_cor_data),
+                            paste("Correlation Matrix for", input$cor_matrix_choice)))
+  })
   
   
   # SERVER Tab 5: DRUG SENSITIVITY
   
-  # Generate UI for selecting the first level
+  observe({
+    req(length(shared_data$uploaded) > 0)  # Ensure there's data to check
+    
+    drug_uploaded <- names(which(vapply(shared_data$uploaded, function(x) 
+      any(grepl("IC50|AUC|drug", names(x), ignore.case = TRUE)), 
+      logical(1))))
+    
+    updateSelectInput(session, "uploaded_drug_data", choices = drug_uploaded)
+  })
+  
+  
+  
   output$level1_ui <- renderUI({
-    req(input$dataset_choice, input$group_var)
-    dataset <- get(datasets_drug[[input$dataset_choice]])
+    req(input$group_var)
+    if (input$drug_data_source == "builtin") {
+      dataset <- get(datasets_drug[[input$dataset_choice]])
+    } else {
+      req(input$uploaded_drug_data)
+      dataset <- shared_data$uploaded[[input$uploaded_drug_data]]
+    }
     levels <- unique(dataset[[input$group_var]])
     selectInput("level1", "Select First Level:", choices = levels)
   })
   
-  # Generate UI for selecting the second level based on the first level
   output$level2_ui <- renderUI({
-    req(input$dataset_choice, input$group_var, input$level1)
-    dataset <- get(datasets_drug[[input$dataset_choice]])
+    req(input$group_var, input$level1)
+    if (input$drug_data_source == "builtin") {
+      dataset <- get(datasets_drug[[input$dataset_choice]])
+    } else {
+      req(input$uploaded_drug_data)
+      dataset <- shared_data$uploaded[[input$uploaded_drug_data]]
+    }
     levels <- setdiff(unique(dataset[[input$group_var]]), input$level1)
     selectInput("level2", "Select Second Level:", choices = levels)
   })
   
   observeEvent(input$run_test, {
-    req(input$dataset_choice, input$group_var, input$level1, input$level2)
-    dataset <- get(datasets_drug[[input$dataset_choice]])
-    # Filter the data based on the selected levels
+    req(input$group_var, input$level1, input$level2)
+    
+    if (input$drug_data_source == "builtin") {
+      dataset <- get(datasets_drug[[input$dataset_choice]])
+    } else {
+      req(input$uploaded_drug_data)
+      dataset <- shared_data$uploaded[[input$uploaded_drug_data]]
+    }
+    
+    # Fix filtering
     filtered_data <- dataset %>% 
-      filter(get(input$group_var) %in% c(input$level1, input$level2))
+      filter(.data[[input$group_var]] %in% c(input$level1, input$level2))
     
-    # Perform the t-test based on the selected grouping variable
-    t_test_result <- t.test(IC50 ~ get(input$group_var), data = filtered_data)
+    # Ensure IC50 column exists
+    req("IC50" %in% names(filtered_data))
     
-    # Display the t-test result
+    # Fix t-test formula
+    t_test_result <- t.test(as.formula(paste("IC50 ~", input$group_var)), data = filtered_data)
+    
     output$t_test_result <- renderPrint({
       t_test_result
     })
   })
+  
   
   
   # SERVER Tab 6: RADIOGX ANALYSIS  
@@ -1209,8 +1348,9 @@ server <- function(input, output, session) {
   
   # Output for the report text file
   #output$research_report <- renderText({
-   # text_content
+  # text_content
   #})
 }
+
 
 shinyApp(ui = ui, server = server)
