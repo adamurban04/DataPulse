@@ -457,9 +457,24 @@ ui <- fluidPage(
       h3("Drug Sensitivity T-test Analysis", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
       sidebarLayout(
         sidebarPanel(
-          selectInput("dataset_choice", "Select Dataset:", choices = names(datasets_drug)),
-          # The datasets in the app are only lung_NSCLC_adenocarcinoma "Tissue Sub-type"
-          selectInput("group_var", "Select Grouping Variable:", choices = c("Drug Name", "Cell Line Name", "Tissue Sub-type")),
+          radioButtons(
+            inputId = "drug_data_choice",
+            label = "Choose Dataset:",
+            choices = c(
+              "Pre-loaded Datasets" = "preloaded_data",
+              "Uploaded Data" = "uploaded_data"
+            )
+          ),
+          conditionalPanel(
+            condition = "input.drug_data_choice == 'preloaded_data'",
+            selectInput("dataset_choice", "Select Dataset:", choices = names(datasets_drug))
+          ),
+          conditionalPanel(
+            condition = "input.drug_data_choice == 'uploaded_data'",
+            selectInput("uploaded_drug_data", "Select Uploaded Dataset:", choices = NULL)
+          ),
+          # The grouping variable selection will be dynamic based on the dataset
+          uiOutput("group_var_ui"),
           uiOutput("level1_ui"),
           uiOutput("level2_ui"),
           actionButton("run_test", "Run T-test")
@@ -542,8 +557,29 @@ ui <- fluidPage(
       h3("DICOM Viewer", style = "background-color: #f0f0f0; color: #333; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"),
       sidebarLayout(
         sidebarPanel(
-          selectInput("dataset_selector", "Choose Dataset:", choices = names(datasets)),
-          sliderInput("image_slider", "Image Number", min = 1, max = 1, value = 1, step = 1)
+          radioButtons(
+            inputId = "image_data_choice",
+            label = "Choose Dataset:",
+            choices = c(
+              "Pre-loaded Datasets" = "preloaded_data",
+              "Uploaded DICOM Files" = "uploaded_data"
+            )
+          ),
+          conditionalPanel(
+            condition = "input.image_data_choice == 'preloaded_data'",
+            selectInput("dataset_selector", "Choose Dataset:", choices = names(datasets))
+          ),
+          conditionalPanel(
+            condition = "input.image_data_choice == 'uploaded_data'",
+            fileInput(
+              "uploaded_dicom", 
+              "Upload DICOM Files:",
+              multiple = TRUE,
+              accept = c(".dcm", ".dicom")
+            ),
+            helpText("Note: Upload multiple DICOM files for viewing")
+          ),
+          uiOutput("image_slider_ui")
         ),
         mainPanel(
           textOutput("image_title"),
@@ -1075,34 +1111,101 @@ server <- function(input, output, session) {
   
   
   # SERVER Tab 5: DRUG SENSITIVITY
+  # Update uploaded dataset choices
+  observe({
+    updateSelectInput(
+      session,
+      "uploaded_drug_data",
+      choices = shared_data$uploaded_names
+    )
+  })
+  
+  # Dynamic grouping variable selection
+  output$group_var_ui <- renderUI({
+    if (input$drug_data_choice == "preloaded_data") {
+      req(input$dataset_choice)
+      selectInput("group_var", "Select Grouping Variable:", 
+                  choices = c("Drug Name", "Cell Line Name", "Tissue Sub-type"))
+    } else {
+      req(input$uploaded_drug_data)
+      dataset <- shared_data$uploaded[[paste0("uploaded_", input$uploaded_drug_data)]]
+      # Select categorical/factor columns for grouping
+      cat_cols <- names(dataset)[sapply(dataset, function(x) is.factor(x) || is.character(x))]
+      selectInput("group_var", "Select Grouping Variable:", choices = cat_cols)
+    }
+  })
+  
+  # Generate UI for selecting the first level
   output$level1_ui <- renderUI({
-    req(input$dataset_choice, input$group_var)
-    dataset <- get(datasets_drug[[input$dataset_choice]])
+    req(input$group_var)
+    if (input$drug_data_choice == "preloaded_data") {
+      req(input$dataset_choice)
+      dataset <- get(datasets_drug[[input$dataset_choice]])
+    } else {
+      req(input$uploaded_drug_data)
+      dataset <- shared_data$uploaded[[paste0("uploaded_", input$uploaded_drug_data)]]
+    }
+    
     levels <- unique(dataset[[input$group_var]])
     selectInput("level1", "Select First Level:", choices = levels)
   })
   
-  # Generate UI for selecting the second level based on the first level
+  # Generate UI for selecting the second level
   output$level2_ui <- renderUI({
-    req(input$dataset_choice, input$group_var, input$level1)
-    dataset <- get(datasets_drug[[input$dataset_choice]])
+    req(input$group_var, input$level1)
+    if (input$drug_data_choice == "preloaded_data") {
+      req(input$dataset_choice)
+      dataset <- get(datasets_drug[[input$dataset_choice]])
+    } else {
+      req(input$uploaded_drug_data)
+      dataset <- shared_data$uploaded[[paste0("uploaded_", input$uploaded_drug_data)]]
+    }
+    
     levels <- setdiff(unique(dataset[[input$group_var]]), input$level1)
     selectInput("level2", "Select Second Level:", choices = levels)
   })
   
   observeEvent(input$run_test, {
-    req(input$dataset_choice, input$group_var, input$level1, input$level2)
-    dataset <- get(datasets_drug[[input$dataset_choice]])
+    if (input$drug_data_choice == "preloaded_data") {
+      req(input$dataset_choice, input$group_var, input$level1, input$level2)
+      dataset <- get(datasets_drug[[input$dataset_choice]])
+    } else {
+      req(input$uploaded_drug_data, input$group_var, input$level1, input$level2)
+      dataset <- shared_data$uploaded[[paste0("uploaded_", input$uploaded_drug_data)]]
+    }
+    
+    # Check if IC50 column exists (or similar for sensitivity measurement)
+    if (!"IC50" %in% names(dataset)) {
+      output$t_test_result <- renderPrint({
+        "Error: The uploaded dataset must contain an 'IC50' column or similar drug sensitivity measurement."
+      })
+      return()
+    }
+    
     # Filter the data based on the selected levels
     filtered_data <- dataset %>% 
       filter(get(input$group_var) %in% c(input$level1, input$level2))
     
-    # Perform the t-test based on the selected grouping variable
-    t_test_result <- t.test(IC50 ~ get(input$group_var), data = filtered_data)
+    # Check if we have enough samples in each group
+    if (nrow(filtered_data) < 2) {
+      output$t_test_result <- renderPrint({
+        "Error: Not enough samples to perform t-test. Need at least 2 samples in each group."
+      })
+      return()
+    }
     
-    # Display the t-test result
-    output$t_test_result <- renderPrint({
-      t_test_result
+    # Perform the t-test
+    tryCatch({
+      t_test_result <- t.test(IC50 ~ get(input$group_var), data = filtered_data)
+      
+      # Display the t-test result
+      output$t_test_result <- renderPrint({
+        t_test_result
+      })
+    }, error = function(e) {
+      output$t_test_result <- renderPrint({
+        paste("Error:", e$message)
+      })
     })
   })
   
@@ -1300,13 +1403,71 @@ server <- function(input, output, session) {
   
   
   
-  # SERVER Tab 8: IMAGES
+  # SERVER Tab 8: IMAGES (updated DICOM processing)
   
   # Initialize reactiveVal to hold images
   images <- reactiveVal(NULL)
   
-  # Observe the dataset_selector input
+  # Observe uploaded DICOM files
+  observeEvent(input$uploaded_dicom, {
+    req(input$uploaded_dicom)
+    
+    # Get the uploaded files
+    uploaded_files <- input$uploaded_dicom$datapath
+    
+    # Validate that files are DICOM
+    if (!all(tools::file_ext(uploaded_files) %in% c("dcm", "dicom"))) {
+      showNotification("Please upload only DICOM files (.dcm or .dicom)", type = "error")
+      return()
+    }
+    
+    # Process the DICOM files
+    tryCatch({
+      # Create a temporary directory to store processed images
+      temp_dir <- tempdir()
+      processed_images <- character(length(uploaded_files))
+      
+      # Process each DICOM file
+      for (i in seq_along(uploaded_files)) {
+        # Read DICOM file
+        dicom_data <- oro.dicom::readDICOM(uploaded_files[i], verbose = FALSE)
+        
+        # Convert to PNG - using either approach below
+        
+        # APPROACH 1: Using base R graphics (simpler)
+        output_file <- file.path(temp_dir, paste0("dicom_", i, ".png"))
+        png(output_file, width = 512, height = 512)
+        par(mar = rep(0, 4))  # Remove margins
+        image(t(dicom_data$img[[1]]), col = gray(0:64/64), axes = FALSE)
+        dev.off()
+        
+        # APPROACH 2: Using magick package (more flexible)
+        # Ensure you have library(magick) at the top of your server.R
+        # output_file <- file.path(temp_dir, paste0("dicom_", i, ".png"))
+        # img_matrix <- dicom_data$img[[1]]
+        # img_normalized <- (img_matrix - min(img_matrix)) / (max(img_matrix) - min(img_matrix))
+        # magick::image_write(
+        #   magick::image_read(as.raster(img_normalized)),
+        #   path = output_file
+        # )
+        
+        processed_images[i] <- output_file
+      }
+      
+      images(processed_images)
+      updateSliderInput(session, "image_slider", 
+                        min = 1, 
+                        max = length(processed_images), 
+                        value = 1)
+      
+    }, error = function(e) {
+      showNotification(paste("Error processing DICOM files:", e$message), type = "error")
+    })
+  })
+  
+  # Observe the dataset_selector input for pre-loaded data
   observeEvent(input$dataset_selector, {
+    req(input$image_data_choice == "preloaded_data")
     selected_path <- datasets[[input$dataset_selector]]
     if (!is.null(selected_path)) {
       all_images <- scan_dicom_files(selected_path)
@@ -1315,11 +1476,39 @@ server <- function(input, output, session) {
     }
   }, ignoreNULL = TRUE)
   
+  # Dynamic slider UI
+  output$image_slider_ui <- renderUI({
+    req(images())
+    sliderInput("image_slider", "Image Number", 
+                min = 1, 
+                max = length(images()), 
+                value = 1, 
+                step = 1)
+  })
+  
   # Render the image based on the slider input
   output$image_display <- renderImage({
-    req(images())  # Ensure images() is not NULL before rendering
+    req(images(), input$image_slider)  # Ensure images() and slider input are available
+    
+    # Validate the selected image index
+    if (input$image_slider < 1 || input$image_slider > length(images())) {
+      return(NULL)
+    }
+    
     list(src = images()[input$image_slider], contentType = "image/png")
   }, deleteFile = FALSE)
+  
+  # Image title
+  output$image_title <- renderText({
+    req(images(), input$image_slider)
+    if (input$image_data_choice == "preloaded_data") {
+      paste("Image", input$image_slider, "of", length(images()), 
+            "-", input$dataset_selector)
+    } else {
+      paste("Image", input$image_slider, "of", length(images()), 
+            "- Uploaded DICOM")
+    }
+  })
   
   
   
