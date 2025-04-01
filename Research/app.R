@@ -604,13 +604,13 @@ ui <- fluidPage(
         h4("Graph Settings"),
         selectInput("x_var", "X-Axis Variable", choices = filter_columns),
         selectInput("y_var", "Y-Axis Variable", choices = c("None", filter_columns)),
-        selectInput("plot_type", "Plot Type", choices = c("Bar Plot", "Scatter Plot", "Box Plot", "Histogram"))
+        selectInput("plot_type_hip", "Plot Type", choices = c("Bar Plot", "Scatter Plot", "Box Plot", "Histogram"))
       ),
       
       mainPanel(
         tabsetPanel(
-          tabPanel("Filtered Data", DTOutput("filtered_table")),
-          tabPanel("Visualization", plotOutput("dynamic_plot"))
+          tabPanel("Filtered Data", DTOutput("filtered_table_hip")),
+          tabPanel("Visualization", plotOutput("dynamic_plot_hip"))
         )
       )
     )
@@ -1540,7 +1540,7 @@ server <- function(input, output, session) {
   })
   
   # Reactive filtering of the dataset
-  filtered_data <- reactive({
+  filtered_data_hip <- reactive({
     data <- hip_fracture_data
     for (col in filter_columns) {
       filter_input <- input[[paste0("filter_", col)]]
@@ -1556,32 +1556,32 @@ server <- function(input, output, session) {
   })
   
   # Render filtered data table
-  output$filtered_table <- renderDT({
-    datatable(filtered_data(), options = list(scrollX = TRUE))
+  output$filtered_table_hip <- renderDT({
+    datatable(filtered_data_hip(), options = list(scrollX = TRUE))
   })
   
   # Render dynamic plot
-  output$dynamic_plot <- renderPlot({
-    data <- filtered_data()
+  output$dynamic_plot_hip <- renderPlot({
+    data <- filtered_data_hip()
     x_var <- input$x_var
     y_var <- input$y_var
     
-    if (input$plot_type == "Bar Plot") {
+    if (input$plot_type_hip == "Bar Plot") {
       ggplot(data, aes_string(x = x_var)) +
         geom_bar(fill = "skyblue", color = "black") +
         theme_minimal() +
         labs(title = "Bar Plot", x = x_var, y = "Count")
-    } else if (input$plot_type == "Scatter Plot" && y_var != "None") {
+    } else if (input$plot_type_hip == "Scatter Plot" && y_var != "None") {
       ggplot(data, aes_string(x = x_var, y = y_var)) +
         geom_point(color = "blue") +
         theme_minimal() +
         labs(title = "Scatter Plot", x = x_var, y = y_var)
-    } else if (input$plot_type == "Box Plot" && y_var != "None") {
+    } else if (input$plot_type_hip == "Box Plot" && y_var != "None") {
       ggplot(data, aes_string(x = x_var, y = y_var)) +
         geom_boxplot(fill = "lightblue", color = "black") +
         theme_minimal() +
         labs(title = "Box Plot", x = x_var, y = y_var)
-    } else if (input$plot_type == "Histogram" && is.numeric(filtered_data_initial[[x_var]])) {
+    } else if (input$plot_type_hip == "Histogram" && is.numeric(filtered_data_initial[[x_var]])) {
       ggplot(data, aes_string(x = x_var)) +
         geom_histogram(binwidth = 5, fill = "skyblue", color = "black", alpha = 0.7) +
         theme_minimal() +
