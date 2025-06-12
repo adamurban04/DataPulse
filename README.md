@@ -3,8 +3,6 @@
 
 A repository for collaboration on a bioinformatics research project **Towards Discovering Novel Biomarkers for Pan-Cancers: Framework for Statistical and Exploratory Data Analysis**.
 
-Open-source contribution:
-
 # DataPulse
 *Shiny app that provides statistical and exploratory data analysis and the means for identifying data bias*  
 You can view this tool at: [adamurban.shinyapps.io/DataPulse](https://adamurban.shinyapps.io/DataPulse/)
